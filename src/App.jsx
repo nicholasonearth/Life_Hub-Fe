@@ -40,7 +40,7 @@ function App() {
   const timerRef    = useRef(null);
   const completeRef = useRef(null);  // selalu up-to-date tanpa dep loop
 
-  const baseUrl = 'http://127.0.0.1:8000/api';
+  const baseUrl = 'https://life-hub-g75sqv5kj-nicholasdevin9-6847s-projects.vercel.app/api';
   if (token) axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
   // ══════════════════════════════════════════════
