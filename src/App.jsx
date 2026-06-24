@@ -37,10 +37,10 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [sessCount, setSessCount] = useState(0);
 
-  const timerRef    = useRef(null);
+  const timerRef = useRef(null);
   const completeRef = useRef(null);  // selalu up-to-date tanpa dep loop
 
-  const baseUrl = 'https://life-hub-g75sqv5kj-nicholasdevin9-6847s-projects.vercel.app/api';
+  const baseUrl = import.meta.env.VITE_API_URL || 'https://lifehub-webapp-production.up.railway.app/api.';
   if (token) axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
   // ══════════════════════════════════════════════
@@ -139,8 +139,8 @@ function App() {
   useEffect(() => { return () => clearInterval(timerRef.current); }, []);
 
   const toggleTimer = () => { setIsRunning(prev => !prev); };
-  const resetTimer  = () => { clearInterval(timerRef.current); setIsRunning(false); setTimeLeft(MODES[pomMode].duration); };
-  const changeMode  = (m) => { clearInterval(timerRef.current); setIsRunning(false); setPomMode(m); setTimeLeft(MODES[m].duration); };
+  const resetTimer = () => { clearInterval(timerRef.current); setIsRunning(false); setTimeLeft(MODES[pomMode].duration); };
+  const changeMode = (m) => { clearInterval(timerRef.current); setIsRunning(false); setPomMode(m); setTimeLeft(MODES[m].duration); };
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   const pct = timeLeft / MODES[pomMode].duration;
