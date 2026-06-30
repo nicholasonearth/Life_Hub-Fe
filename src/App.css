@@ -1170,3 +1170,118 @@
 .notes-saved-badge.visible {
   opacity: 1;
 }
+
+/* ═══════════════════════════════════════════════
+   LIGHT MODE OVERRIDES
+   ═══════════════════════════════════════════════ */
+body.light-mode .login-bg {
+  background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 30%, #f8fafc 60%, #e2e8f0 100%);
+}
+body.light-mode .login-card, 
+body.light-mode .glass-card, 
+body.light-mode .sidebar, 
+body.light-mode .modal-card {
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  box-shadow: var(--shadow-lg);
+}
+body.light-mode .sidebar {
+  background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.98) 100%);
+  border-right-color: var(--border-subtle);
+}
+body.light-mode .nav-btn { color: var(--text-muted); }
+body.light-mode .nav-btn:hover { background: rgba(0,0,0,0.03); color: var(--text-primary); }
+body.light-mode .nav-btn.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(59, 130, 246, 0.05));
+  color: var(--accent-purple);
+}
+body.light-mode .xp-container, 
+body.light-mode .task-item, 
+body.light-mode .cal-cell, 
+body.light-mode .event-item, 
+body.light-mode .quick-notes-textarea {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: var(--border-subtle);
+}
+body.light-mode .task-item:hover, 
+body.light-mode .cal-cell:hover, 
+body.light-mode .event-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: var(--border-glow);
+}
+body.light-mode .input-premium, 
+body.light-mode .textarea-premium, 
+body.light-mode .select-premium {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+body.light-mode .input-premium:focus, 
+body.light-mode .textarea-premium:focus, 
+body.light-mode .select-premium:focus {
+  background: #ffffff;
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px var(--accent-purple-glow);
+}
+body.light-mode .section-title, 
+body.light-mode .stat-number, 
+body.light-mode .logo-text, 
+body.light-mode .cal-month-label {
+  color: var(--text-primary);
+  background: none;
+  -webkit-text-fill-color: initial;
+}
+body.light-mode .logo-gradient {
+  background: linear-gradient(135deg, #6366f1, #3b82f6, #14b8a6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+body.light-mode .cal-nav-btn {
+  background: #ffffff;
+  border-color: var(--border-subtle);
+  color: var(--text-secondary);
+}
+body.light-mode .cal-nav-btn:hover {
+  background: var(--accent-purple-glow);
+  color: var(--accent-purple);
+}
+body.light-mode .cal-day-num { color: var(--text-primary); }
+body.light-mode .cal-cell.today {
+  background: var(--accent-purple-glow);
+  border-color: var(--accent-purple);
+}
+body.light-mode .quote-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(248,250,252,0.9));
+  border-color: var(--border-subtle);
+}
+body.light-mode .quote-text { color: var(--text-secondary); }
+body.light-mode .empty-state-text, 
+body.light-mode .section-subtitle, 
+body.light-mode .stat-label {
+  color: var(--text-muted);
+}
+body.light-mode .task-item .custom-checkbox {
+  border-color: var(--border-subtle);
+}
+body.light-mode .task-item .custom-checkbox.checked {
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  border-color: transparent;
+}
+body.light-mode .task-item .custom-checkbox:hover {
+  border-color: var(--accent-purple);
+}
+body.light-mode .btn-close {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-muted);
+}
+body.light-mode .btn-close:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--accent-red);
+}
+body.light-mode .modal-card h3,
+body.light-mode .event-item p {
+  color: var(--text-primary) !important;
+}
+body.light-mode .quick-notes-textarea::placeholder {
+  color: var(--text-muted);
+}

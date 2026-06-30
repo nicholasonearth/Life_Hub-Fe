@@ -149,6 +149,7 @@ function App() {
   // ══════════════════════════════════════════════
   // 1. STATE GLOBAL
   // ══════════════════════════════════════════════
+  const [theme, setTheme] = useState(() => localStorage.getItem('lifehub_theme') || 'dark');
   const [token, setToken] = useState(localStorage.getItem('auth_token') || '');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [email, setEmail] = useState('');
@@ -405,6 +406,19 @@ function App() {
 
   useEffect(() => { return () => clearInterval(timerRef.current); }, []);
 
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-mode');
+    } else {
+      document.body.classList.remove('light-mode');
+    }
+    localStorage.setItem('lifehub_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
   const toggleTimer = () => { setIsRunning(prev => !prev); };
   const resetTimer = () => { clearInterval(timerRef.current); setIsRunning(false); setTimeLeft(MODES[pomMode].duration); };
   const changeMode = (m) => { clearInterval(timerRef.current); setIsRunning(false); setPomMode(m); setTimeLeft(MODES[m].duration); };
@@ -592,11 +606,34 @@ function App() {
           </div>
         </div>
 
-        {/* Logout */}
-        <button onClick={handleLogout} className="btn-logout">
-          <i className="fas fa-sign-out-alt"></i>
-          Logout
-        </button>
+        {/* Theme Toggle & Logout */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <button 
+            onClick={toggleTheme} 
+            style={{
+              width: '100%', padding: '12px', borderRadius: '14px', 
+              border: '1px solid rgba(255, 255, 255, 0.05)', 
+              background: 'rgba(255, 255, 255, 0.02)', 
+              color: theme === 'dark' ? '#f0f0f5' : '#1e293b', 
+              fontFamily: 'Outfit', fontWeight: 600, fontSize: '0.85rem',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)' }}
+            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)' }}
+          >
+            {theme === 'dark' ? (
+              <><i className="fas fa-sun" style={{ color: '#fbbf24' }}></i> Light Mode</>
+            ) : (
+              <><i className="fas fa-moon" style={{ color: '#818cf8' }}></i> Dark Mode</>
+            )}
+          </button>
+
+          <button onClick={handleLogout} className="btn-logout">
+            <i className="fas fa-sign-out-alt"></i>
+            Logout
+          </button>
+        </div>
       </aside>
 
       {/* ══════════════════ MAIN CONTENT ══════════════════ */}
