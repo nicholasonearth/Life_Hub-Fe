@@ -199,7 +199,7 @@ function App() {
           callback: (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
               setGoogleToken(tokenResponse.access_token);
-              Swal.fire({ icon: 'success', title: 'Terhubung ke Google Calendar!', background: '#0d0d1a', color: '#fff', timer: 1500, showConfirmButton: false });
+              Swal.fire({ icon: 'success', title: 'Terhubung ke Google Calendar!', background: 'var(--bg-secondary)', color: 'var(--text-primary)', timer: 1500, showConfirmButton: false });
             }
           },
         });
@@ -214,7 +214,7 @@ function App() {
     if (tokenClientRef.current) {
       tokenClientRef.current.requestAccessToken();
     } else {
-      Swal.fire({ icon: 'error', title: 'Oops', text: 'Google API belum termuat. Coba refresh halaman.', background: '#0d0d1a', color: '#fff' });
+      Swal.fire({ icon: 'error', title: 'Oops', text: 'Google API belum termuat. Coba refresh halaman.', background: 'var(--bg-secondary)', color: 'var(--text-primary)' });
     }
   };
 
@@ -234,9 +234,9 @@ function App() {
       const res = await axios.post(`${baseUrl}/login`, { email, password });
       localStorage.setItem('auth_token', res.data.access_token);
       setToken(res.data.access_token);
-      Swal.fire({ icon: 'success', title: 'Berhasil Masuk!', background: '#0d0d1a', color: '#fff', timer: 1500, showConfirmButton: false });
+      Swal.fire({ icon: 'success', title: 'Berhasil Masuk!', background: 'var(--bg-secondary)', color: 'var(--text-primary)', timer: 1500, showConfirmButton: false });
     } catch {
-      Swal.fire({ icon: 'error', title: 'Login Gagal', text: 'Email atau password salah.', background: '#0d0d1a', color: '#fff' });
+      Swal.fire({ icon: 'error', title: 'Login Gagal', text: 'Email atau password salah.', background: 'var(--bg-secondary)', color: 'var(--text-primary)' });
     }
   };
 
@@ -292,7 +292,7 @@ function App() {
     };
 
     if (googleToken) {
-      Swal.fire({ title: 'Menyimpan ke Google Calendar...', background: '#0d0d1a', color: '#fff', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      Swal.fire({ title: 'Menyimpan ke Google Calendar...', background: 'var(--bg-secondary)', color: 'var(--text-primary)', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
       const gEvent = {
         summary: event.title,
@@ -317,12 +317,12 @@ function App() {
         if (!response.ok) {
           const errData = await response.json();
           console.error('Google API Error:', errData);
-          Swal.fire({ icon: 'error', title: 'Gagal API', text: errData.error?.message || 'Pastikan Google Calendar API sudah di-enable di Cloud Console.', background: '#0d0d1a', color: '#fff' });
+          Swal.fire({ icon: 'error', title: 'Gagal API', text: errData.error?.message || 'Pastikan Google Calendar API sudah di-enable di Cloud Console.', background: 'var(--bg-secondary)', color: 'var(--text-primary)' });
           return;
         }
       } catch (err) {
         console.error(err);
-        Swal.fire({ icon: 'error', title: 'Gagal Koneksi', text: 'Tidak dapat menghubungi server Google.', background: '#0d0d1a', color: '#fff' });
+        Swal.fire({ icon: 'error', title: 'Gagal Koneksi', text: 'Tidak dapat menghubungi server Google.', background: 'var(--bg-secondary)', color: 'var(--text-primary)' });
         return;
       }
     }
@@ -332,9 +332,9 @@ function App() {
     setShowAddEventForm(false);
     
     if (googleToken) {
-      Swal.fire({ icon: 'success', title: 'Tersimpan Otomatis!', text: 'Sudah ditambahkan ke Google Calendar', background: '#0d0d1a', color: '#fff', timer: 1800, showConfirmButton: false });
+      Swal.fire({ icon: 'success', title: 'Tersimpan Otomatis!', text: 'Sudah ditambahkan ke Google Calendar', background: 'var(--bg-secondary)', color: 'var(--text-primary)', timer: 1800, showConfirmButton: false });
     } else {
-      Swal.fire({ icon: 'success', title: 'Tersimpan (Lokal)!', text: 'Gunakan tombol Connect untuk auto-save.', background: '#0d0d1a', color: '#fff', timer: 1500, showConfirmButton: false });
+      Swal.fire({ icon: 'success', title: 'Tersimpan (Lokal)!', text: 'Gunakan tombol Connect untuk auto-save.', background: 'var(--bg-secondary)', color: 'var(--text-primary)', timer: 1500, showConfirmButton: false });
     }
   };
 
@@ -374,18 +374,18 @@ function App() {
           html: leveled_up
             ? `<div style="font-size:2.2rem;color:#818cf8;font-weight:900;margin-bottom:6px">Lv.${level}</div><div style="color:#aaa">+${xp_gained} XP • Kamu naik level!</div>`
             : `<div style="color:#818cf8;font-weight:bold;font-size:1.3rem;margin-bottom:4px">+${xp_gained} XP</div><div style="color:#aaa;font-size:0.9rem">Sesi ke-${newCount} selesai. Waktunya istirahat!</div>`,
-          background: '#0d0d1a',
-          color: '#fff',
+          background: 'var(--bg-secondary)',
+          color: 'var(--text-primary)',
           confirmButtonColor: '#818cf8',
           confirmButtonText: 'Lanjut! 💪',
         });
       } catch {
-        await Swal.fire({ title: '🍅 Fokus Selesai!', text: `Sesi ke-${newCount} selesai!`, background: '#0d0d1a', color: '#fff', timer: 2500, showConfirmButton: false });
+        await Swal.fire({ title: '🍅 Fokus Selesai!', text: `Sesi ke-${newCount} selesai!`, background: 'var(--bg-secondary)', color: 'var(--text-primary)', timer: 2500, showConfirmButton: false });
       }
       const next = newCount % 4 === 0 ? 'long' : 'short';
       setPomMode(next); setTimeLeft(MODES[next].duration);
     } else {
-      await Swal.fire({ title: '💪 Break Selesai!', text: 'Siap fokus lagi?', background: '#0d0d1a', color: '#fff', timer: 2000, showConfirmButton: false });
+      await Swal.fire({ title: '💪 Break Selesai!', text: 'Siap fokus lagi?', background: 'var(--bg-secondary)', color: 'var(--text-primary)', timer: 2000, showConfirmButton: false });
       setPomMode('focus'); setTimeLeft(MODES.focus.duration);
     }
   };
@@ -497,18 +497,18 @@ function App() {
             <h1 className="logo-text-large" style={{ marginBottom: '8px' }}>
               Life<span className="logo-gradient">Hub</span>
             </h1>
-            <p style={{ color: '#555577', fontSize: '0.9rem', fontWeight: 500 }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>
               Your Productivity Companion
             </p>
           </div>
 
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ position: 'relative' }}>
-              <i className="fas fa-envelope" style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#555577', fontSize: '0.85rem' }}></i>
+              <i className="fas fa-envelope" style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}></i>
               <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="input-premium" style={{ paddingLeft: '46px' }} required />
             </div>
             <div style={{ position: 'relative' }}>
-              <i className="fas fa-lock" style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#555577', fontSize: '0.85rem' }}></i>
+              <i className="fas fa-lock" style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}></i>
               <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="input-premium" style={{ paddingLeft: '46px' }} required />
             </div>
             <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '8px', padding: '16px' }}>
@@ -520,7 +520,7 @@ function App() {
           </form>
 
           <div style={{ textAlign: 'center', marginTop: '28px' }}>
-            <p style={{ color: '#333355', fontSize: '0.75rem', fontWeight: 500 }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500 }}>
               ✨ Kelola hidup, bangun kebiasaan, raih tujuan
             </p>
           </div>
@@ -543,7 +543,7 @@ function App() {
   ];
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#06060e', fontFamily: "'Outfit', sans-serif" }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)', fontFamily: "'Outfit', sans-serif" }}>
 
       {/* ══════════════════ SIDEBAR ══════════════════ */}
       <aside className="sidebar">
@@ -558,16 +558,16 @@ function App() {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px',
           padding: '14px 16px', borderRadius: '16px',
-          background: 'rgba(15, 15, 35, 0.4)',
+          background: 'var(--glass-bg)',
           border: '1px solid rgba(255,255,255,0.04)',
           marginBottom: '28px'
         }}>
           <div className="user-avatar">{userInitials}</div>
           <div style={{ overflow: 'hidden' }}>
-            <p style={{ fontWeight: 700, fontSize: '0.85rem', color: '#ddddf0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <p style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {user.name || 'Player'}
             </p>
-            <p style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 500 }}>
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>
               Level {user.level} Explorer
             </p>
           </div>
@@ -590,7 +590,7 @@ function App() {
         {/* XP / Level */}
         <div className="xp-container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#666688', textTransform: 'uppercase', letterSpacing: '2px' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '2px' }}>
               Experience
             </span>
             <span className="level-badge">
@@ -601,8 +601,8 @@ function App() {
             <div className="xp-bar-fill" style={{ width: `${Math.min(user.experience, 100)}%` }}></div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-            <span style={{ fontSize: '0.7rem', color: '#444466', fontWeight: 600 }}>{user.experience} XP</span>
-            <span style={{ fontSize: '0.7rem', color: '#444466', fontWeight: 600 }}>100 XP</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{user.experience} XP</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 600 }}>100 XP</span>
           </div>
         </div>
 
@@ -644,13 +644,13 @@ function App() {
           <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
             {/* Greeting */}
             <div className="section-header" style={{ marginBottom: '32px' }}>
-              <p style={{ fontSize: '0.85rem', color: '#555577', fontWeight: 500, marginBottom: '6px' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500, marginBottom: '6px' }}>
                 {getGreeting()} 👋
               </p>
               <h2 className="section-title" style={{ fontSize: '2.4rem' }}>
                 {user.name ? `${user.name.split(' ')[0]}'s Dashboard` : 'Dashboard Overview'}
               </h2>
-              <p style={{ color: '#444466', fontSize: '0.85rem', marginTop: '8px', fontWeight: 500 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '8px', fontWeight: 500 }}>
                 Ringkasan aktivitas dan produktivitasmu hari ini
               </p>
             </div>
@@ -663,13 +663,13 @@ function App() {
                   <i className="fas fa-list-check"></i>
                 </div>
                 <div className="stat-number" style={{ color: '#818cf8' }}>{pendingTasks}</div>
-                <p className="stat-label" style={{ color: '#555577' }}>Pending Tasks</p>
+                <p className="stat-label" style={{ color: 'var(--text-muted)' }}>Pending Tasks</p>
                 {tasks.length > 0 && (
                   <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '4px', overflow: 'hidden' }}>
                       <div style={{ width: `${taskCompletionPct}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #818cf8)', borderRadius: '4px', transition: 'width 0.6s ease' }}></div>
                     </div>
-                    <span style={{ fontSize: '0.7rem', color: '#666688', fontWeight: 700 }}>{taskCompletionPct}%</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>{taskCompletionPct}%</span>
                   </div>
                 )}
               </div>
@@ -683,8 +683,8 @@ function App() {
                   {totalStreak}
                   <span style={{ fontSize: '1.5rem', marginLeft: '8px' }}>🔥</span>
                 </div>
-                <p className="stat-label" style={{ color: '#555577' }}>Total Streak</p>
-                <p style={{ fontSize: '0.75rem', color: '#444466', marginTop: '12px', fontWeight: 500 }}>
+                <p className="stat-label" style={{ color: 'var(--text-muted)' }}>Total Streak</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '12px', fontWeight: 500 }}>
                   {habits.length} habit aktif
                 </p>
               </div>
@@ -697,8 +697,8 @@ function App() {
                 <div className="stat-number" style={{ color: '#4ade80', fontSize: '2.2rem' }}>
                   {diaries.length > 0 ? diaries[0].mood : 'No Entry'}
                 </div>
-                <p className="stat-label" style={{ color: '#555577' }}>Latest Mood</p>
-                <p style={{ fontSize: '0.75rem', color: '#444466', marginTop: '12px', fontWeight: 500 }}>
+                <p className="stat-label" style={{ color: 'var(--text-muted)' }}>Latest Mood</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '12px', fontWeight: 500 }}>
                   {diaries.length} jurnal ditulis
                 </p>
               </div>
@@ -715,7 +715,7 @@ function App() {
               {/* Quick Notes */}
               <div className="glass-card quick-notes-card" style={{ padding: '20px 24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h4 style={{ fontWeight: 700, fontSize: '0.85rem', color: '#ddddf0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h4 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <i className="fas fa-sticky-note" style={{ color: '#fbbf24', fontSize: '0.8rem' }}></i>
                     Quick Notes
                   </h4>
@@ -743,8 +743,8 @@ function App() {
                   <i className="fas fa-plus"></i>
                 </div>
                 <div>
-                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ddddf0' }}>Tambah Task</p>
-                  <p style={{ fontSize: '0.75rem', color: '#555577' }}>Buat tugas baru</p>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Tambah Task</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Buat tugas baru</p>
                 </div>
               </button>
               <button
@@ -756,8 +756,8 @@ function App() {
                   <i className="fas fa-calendar-days"></i>
                 </div>
                 <div>
-                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ddddf0' }}>Buka Kalender</p>
-                  <p style={{ fontSize: '0.75rem', color: '#555577' }}>Jadwalkan kegiatan</p>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Buka Kalender</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Jadwalkan kegiatan</p>
                 </div>
               </button>
               <button
@@ -769,8 +769,8 @@ function App() {
                   <i className="fas fa-clock"></i>
                 </div>
                 <div>
-                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ddddf0' }}>Focus Mode</p>
-                  <p style={{ fontSize: '0.75rem', color: '#555577' }}>Mulai sesi Pomodoro</p>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Focus Mode</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Mulai sesi Pomodoro</p>
                 </div>
               </button>
               <button
@@ -782,8 +782,8 @@ function App() {
                   <i className="fas fa-pen-fancy"></i>
                 </div>
                 <div>
-                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ddddf0' }}>Tulis Jurnal</p>
-                  <p style={{ fontSize: '0.75rem', color: '#555577' }}>Ceritakan harimu</p>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Tulis Jurnal</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Ceritakan harimu</p>
                 </div>
               </button>
             </div>
@@ -854,15 +854,15 @@ function App() {
             <div style={{ display: 'flex', gap: '20px', marginTop: '20px', animation: 'fadeIn 0.4s ease-out 0.2s both' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#818cf8' }}></div>
-                <span style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 600 }}>Tasks</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Tasks</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4ade80' }}></div>
-                <span style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 600 }}>Diary</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Diary</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }}></div>
-                <span style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 600 }}>Events</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>Events</span>
               </div>
             </div>
 
@@ -873,14 +873,14 @@ function App() {
                   <i className="fab fa-google"></i>
                 </div>
                 <div>
-                  <h4 style={{ color: '#ddddf0', fontWeight: 700, fontSize: '0.9rem' }}>Google Calendar Auto-Save</h4>
-                  <p style={{ color: '#555577', fontSize: '0.75rem', marginTop: '2px' }}>
+                  <h4 style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '0.9rem' }}>Google Calendar Auto-Save</h4>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '2px' }}>
                     {googleToken ? '✅ Terhubung! Event baru akan otomatis tersimpan.' : 'Hubungkan untuk menyimpan event otomatis tanpa draft.'}
                   </p>
                 </div>
               </div>
               {!googleToken ? (
-                <button onClick={handleConnectGoogle} style={{ padding: '8px 16px', background: '#4285f4', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
+                <button onClick={handleConnectGoogle} style={{ padding: '8px 16px', background: '#4285f4', color: 'var(--text-primary)', border: 'none', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
                   Connect
                 </button>
               ) : (
@@ -902,10 +902,10 @@ function App() {
 
               {/* Modal Header */}
               <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#f0f0f5', marginBottom: '4px' }}>
+                <h3 style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '4px' }}>
                   📅 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                 </h3>
-                <p style={{ fontSize: '0.8rem', color: '#555577' }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   {selectedEvents.length + selectedTasks.length + selectedDiaries.length} item di tanggal ini
                 </p>
               </div>
@@ -913,7 +913,7 @@ function App() {
               {/* Events list */}
               {selectedEvents.length > 0 && (
                 <div style={{ marginBottom: '20px' }}>
-                  <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#666688', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+                  <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
                     Events
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -922,15 +922,15 @@ function App() {
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                           <div className="event-color-dot" style={{ background: ev.color, marginTop: '5px' }}></div>
                           <div style={{ flex: 1 }}>
-                            <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f0f0f5' }}>{ev.title}</p>
+                            <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{ev.title}</p>
                             {ev.startTime && (
-                              <p style={{ fontSize: '0.75rem', color: '#666688', marginTop: '2px' }}>
+                              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                                 <i className="fas fa-clock" style={{ fontSize: '0.65rem', marginRight: '4px' }}></i>
                                 {ev.startTime}{ev.endTime ? ` — ${ev.endTime}` : ''}
                               </p>
                             )}
                             {ev.description && (
-                              <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '6px' }}>{ev.description}</p>
+                              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>{ev.description}</p>
                             )}
                             <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                               {!googleToken && (
@@ -959,7 +959,7 @@ function App() {
               {/* Tasks on this date */}
               {selectedTasks.length > 0 && (
                 <div style={{ marginBottom: '20px' }}>
-                  <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#666688', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+                  <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
                     <i className="fas fa-check-double" style={{ marginRight: '6px', color: '#818cf8' }}></i>Tasks
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -976,14 +976,14 @@ function App() {
               {/* Diary entries on this date */}
               {selectedDiaries.length > 0 && (
                 <div style={{ marginBottom: '20px' }}>
-                  <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#666688', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+                  <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
                     <i className="fas fa-book" style={{ marginRight: '6px', color: '#4ade80' }}></i>Diary
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {selectedDiaries.map(d => (
                       <div key={d.id} style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.08)' }}>
-                        <p style={{ fontWeight: 700, fontSize: '0.85rem', color: '#ddddf0' }}>{d.title}</p>
-                        <p style={{ fontSize: '0.75rem', color: '#666688', marginTop: '2px' }}>{d.mood}</p>
+                        <p style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{d.title}</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{d.mood}</p>
                       </div>
                     ))}
                   </div>
@@ -1004,7 +1004,7 @@ function App() {
                 </button>
               ) : (
                 <div style={{ marginTop: '8px', padding: '20px', borderRadius: '16px', background: 'rgba(129,140,248,0.04)', border: '1px solid rgba(129,140,248,0.1)' }}>
-                  <h4 style={{ fontWeight: 800, fontSize: '0.9rem', color: '#ddddf0', marginBottom: '16px' }}>
+                  <h4 style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '16px' }}>
                     ✨ Event Baru
                   </h4>
                   <form onSubmit={handleAddEvent} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1015,11 +1015,11 @@ function App() {
                     />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                       <div>
-                        <label style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Mulai</label>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Mulai</label>
                         <input type="time" value={newEvent.startTime} onChange={e => setNewEvent({ ...newEvent, startTime: e.target.value })} className="input-premium" />
                       </div>
                       <div>
-                        <label style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Selesai</label>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Selesai</label>
                         <input type="time" value={newEvent.endTime} onChange={e => setNewEvent({ ...newEvent, endTime: e.target.value })} className="input-premium" />
                       </div>
                     </div>
@@ -1031,7 +1031,7 @@ function App() {
 
                     {/* Color Picker */}
                     <div>
-                      <label style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, display: 'block', marginBottom: '8px' }}>Warna</label>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '8px' }}>Warna</label>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         {EVENT_COLORS.map(c => (
                           <div
@@ -1052,7 +1052,7 @@ function App() {
                       </button>
                       <button type="button" onClick={() => setShowAddEventForm(false)} style={{
                         padding: '12px 20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)',
-                        background: 'rgba(255,255,255,0.03)', color: '#888', cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 600
+                        background: 'rgba(255,255,255,0.03)', color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 600
                       }}>
                         Batal
                       </button>
@@ -1085,10 +1085,10 @@ function App() {
                   <text x="22" y="26" textAnchor="middle" fill="#818cf8" fontSize="11" fontWeight="800">{taskCompletionPct}%</text>
                 </svg>
                 <div>
-                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ddddf0' }}>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                     {completedTasks} dari {tasks.length} selesai
                   </p>
-                  <p style={{ fontSize: '0.75rem', color: '#555577' }}>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {pendingTasks === 0 ? '🎉 Semua tugas selesai!' : `${pendingTasks} tugas tersisa`}
                   </p>
                 </div>
@@ -1178,11 +1178,11 @@ function App() {
                     <div key={h.id} className="glass-card glass-card-yellow habit-card" style={{ animationDelay: `${i * 0.08}s` }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div style={{ flex: 1 }}>
-                          <h3 style={{ fontWeight: 800, fontSize: '1.1rem', color: '#f0f0f5', marginBottom: '8px' }}>{h.name}</h3>
+                          <h3 style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '8px' }}>{h.name}</h3>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontSize: '1.1rem' }}>{tier.icon}</span>
                             <span className={tier.class} style={{ fontWeight: 800, fontSize: '1.4rem' }}>{h.streak}</span>
-                            <span style={{ fontSize: '0.8rem', color: '#555577', fontWeight: 600 }}>hari streak</span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>hari streak</span>
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1218,7 +1218,7 @@ function App() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '28px' }}>
               {/* Write Form */}
               <div className="glass-card" style={{ padding: '28px', height: 'fit-content', position: 'sticky', top: '0', animation: 'fadeInUp 0.4s ease-out both' }}>
-                <h3 style={{ fontWeight: 800, fontSize: '1.1rem', color: '#f0f0f5', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <i className="fas fa-pen-fancy" style={{ color: '#818cf8', fontSize: '0.9rem' }}></i>
                   Tulis Jurnal Baru
                 </h3>
@@ -1256,12 +1256,12 @@ function App() {
                           <i className="fas fa-times" style={{ fontSize: '0.75rem' }}></i>
                         </button>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', paddingRight: '36px' }}>
-                          <h3 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#f0f0f5' }}>{d.title}</h3>
+                          <h3 style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-primary)' }}>{d.title}</h3>
                           <span className={`mood-badge ${moodClass}`}>{d.mood}</span>
                         </div>
-                        <p style={{ color: '#9999bb', lineHeight: 1.7, whiteSpace: 'pre-line', fontSize: '0.9rem' }}>{d.content}</p>
+                        <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, whiteSpace: 'pre-line', fontSize: '0.9rem' }}>{d.content}</p>
                         <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                          <p style={{ fontSize: '0.75rem', color: '#444466', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <i className="fas fa-calendar" style={{ fontSize: '0.65rem' }}></i>
                             {new Date(d.created_at).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                           </p>
@@ -1299,13 +1299,13 @@ function App() {
             <div style={{
               display: 'flex', gap: '6px', marginBottom: '40px', marginTop: '16px',
               padding: '6px', borderRadius: '16px',
-              background: 'rgba(12, 12, 28, 0.5)', border: '1px solid rgba(255,255,255,0.05)',
+              background: 'var(--glass-bg)', border: '1px solid rgba(255,255,255,0.05)',
             }}>
               {Object.entries(MODES).map(([key, val]) => (
                 <button key={key} onClick={() => changeMode(key)} className="focus-mode-tab"
                   style={pomMode === key
                     ? { background: val.color + '15', color: val.color, borderColor: val.color + '30', boxShadow: `0 0 16px ${val.color}10` }
-                    : { color: '#555577' }}
+                    : { color: 'var(--text-muted)' }}
                 >
                   {val.label}
                 </button>
@@ -1371,13 +1371,13 @@ function App() {
             {/* Session dots */}
             {sessCount > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.4s ease' }}>
-                <span style={{ fontSize: '0.7rem', color: '#444466', fontWeight: 700, marginRight: '4px' }}>Sesi selesai:</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700, marginRight: '4px' }}>Sesi selesai:</span>
                 {Array.from({ length: Math.min(sessCount, 8) }).map((_, i) => (
                   <div key={i} className="session-dot"
                     style={{ background: MODES.focus.color, boxShadow: `0 0 8px ${MODES.focus.shadow}`, animationDelay: `${i * 0.08}s` }}
                   />
                 ))}
-                {sessCount > 8 && <span style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700 }}>+{sessCount - 8}</span>}
+                {sessCount > 8 && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>+{sessCount - 8}</span>}
               </div>
             )}
           </div>
@@ -1394,19 +1394,19 @@ function App() {
             {/* Summary Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '28px' }}>
               <div className="glass-card" style={{ padding: '20px 24px', animation: 'fadeInUp 0.4s ease-out 0.05s both' }}>
-                <p style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Tasks</p>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Tasks</p>
                 <p style={{ fontSize: '2rem', fontWeight: 900, color: '#818cf8', marginTop: '4px' }}>{tasks.length}</p>
               </div>
               <div className="glass-card" style={{ padding: '20px 24px', animation: 'fadeInUp 0.4s ease-out 0.1s both' }}>
-                <p style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Completed</p>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Completed</p>
                 <p style={{ fontSize: '2rem', fontWeight: 900, color: '#4ade80', marginTop: '4px' }}>{completedTasks}</p>
               </div>
               <div className="glass-card" style={{ padding: '20px 24px', animation: 'fadeInUp 0.4s ease-out 0.15s both' }}>
-                <p style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Habits</p>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Habits</p>
                 <p style={{ fontSize: '2rem', fontWeight: 900, color: '#fbbf24', marginTop: '4px' }}>{habits.length}</p>
               </div>
               <div className="glass-card" style={{ padding: '20px 24px', animation: 'fadeInUp 0.4s ease-out 0.2s both' }}>
-                <p style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Journal</p>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Journal</p>
                 <p style={{ fontSize: '2rem', fontWeight: 900, color: '#60a5fa', marginTop: '4px' }}>{diaries.length}</p>
               </div>
             </div>
@@ -1416,7 +1416,7 @@ function App() {
               <div className="glass-card chart-card" style={{ animationDelay: '0.15s' }}>
                 <h3 style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#818cf8', boxShadow: '0 0 8px rgba(129,140,248,0.4)' }}></span>
-                  <span style={{ color: '#ddddf0' }}>Penyelesaian Tugas</span>
+                  <span style={{ color: 'var(--text-primary)' }}>Penyelesaian Tugas</span>
                 </h3>
                 <div style={{ height: '250px' }}>
                   <ResponsiveContainer>
@@ -1425,7 +1425,7 @@ function App() {
                         <Cell fill="#818cf8" />
                         <Cell fill="rgba(255,255,255,0.06)" />
                       </Pie>
-                      <Tooltip contentStyle={{ backgroundColor: '#0d0d1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', fontFamily: 'Outfit', fontSize: '0.85rem' }} />
+                      <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', fontFamily: 'Outfit', fontSize: '0.85rem' }} />
                       <Legend wrapperStyle={{ fontFamily: 'Outfit', fontSize: '0.8rem' }} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -1435,14 +1435,14 @@ function App() {
               <div className="glass-card chart-card" style={{ animationDelay: '0.25s' }}>
                 <h3 style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 8px rgba(251,191,36,0.4)' }}></span>
-                  <span style={{ color: '#ddddf0' }}>Performa Habit (Streak)</span>
+                  <span style={{ color: 'var(--text-primary)' }}>Performa Habit (Streak)</span>
                 </h3>
                 <div style={{ height: '250px' }}>
                   <ResponsiveContainer>
                     <BarChart data={stats.habits}>
                       <XAxis dataKey="name" stroke="#444466" fontSize={11} fontFamily="Outfit" />
                       <YAxis stroke="#444466" fontSize={11} fontFamily="Outfit" />
-                      <Tooltip cursor={{ fill: 'rgba(129,140,248,0.04)' }} contentStyle={{ backgroundColor: '#0d0d1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', fontFamily: 'Outfit', fontSize: '0.85rem' }} />
+                      <Tooltip cursor={{ fill: 'rgba(129,140,248,0.04)' }} contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', fontFamily: 'Outfit', fontSize: '0.85rem' }} />
                       <Bar dataKey="value" fill="#fbbf24" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -1452,14 +1452,14 @@ function App() {
               <div className="glass-card chart-card" style={{ gridColumn: '1 / -1', animationDelay: '0.35s' }}>
                 <h3 style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px rgba(74,222,128,0.4)' }}></span>
-                  <span style={{ color: '#ddddf0' }}>Analisis Suasana Hati</span>
+                  <span style={{ color: 'var(--text-primary)' }}>Analisis Suasana Hati</span>
                 </h3>
                 <div style={{ height: '250px' }}>
                   <ResponsiveContainer>
                     <BarChart data={stats.moods} layout="vertical">
                       <XAxis type="number" hide />
                       <YAxis dataKey="name" type="category" stroke="#ddddf0" fontSize={12} fontFamily="Outfit" width={80} />
-                      <Tooltip contentStyle={{ backgroundColor: '#0d0d1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', fontFamily: 'Outfit', fontSize: '0.85rem' }} />
+                      <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', fontFamily: 'Outfit', fontSize: '0.85rem' }} />
                       <Bar dataKey="value" fill="#4ade80" radius={[0, 6, 6, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
