@@ -15,6 +15,53 @@ const MODES = {
 const RADIUS = 110;
 const CIRC = 2 * Math.PI * RADIUS;
 
+// ─── Calendar color options ───
+const EVENT_COLORS = [
+  '#818cf8', '#60a5fa', '#4ade80', '#fbbf24', '#f87171',
+  '#a78bfa', '#2dd4bf', '#fb923c', '#f472b6', '#94a3b8',
+];
+
+// ─── Day names ───
+const DAY_NAMES = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+const MONTH_NAMES = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+];
+
+// ─── Motivational Quotes ───
+const QUOTES = [
+  { text: 'The secret of getting ahead is getting started.', author: 'Mark Twain' },
+  { text: 'Produktivitas bukan tentang melakukan lebih banyak, tapi melakukan yang benar.', author: 'Tim Ferriss' },
+  { text: "It always seems impossible until it's done.", author: 'Nelson Mandela' },
+  { text: 'Satu langkah kecil hari ini, seribu langkah besok.', author: 'Pepatah' },
+  { text: 'Focus on being productive instead of busy.', author: 'Tim Ferriss' },
+  { text: 'Kebiasaan adalah apa yang kamu lakukan saat tidak ada yang melihat.', author: 'Unknown' },
+  { text: 'The only way to do great work is to love what you do.', author: 'Steve Jobs' },
+  { text: 'Disiplin adalah jembatan antara tujuan dan pencapaian.', author: 'Jim Rohn' },
+  { text: "You don't have to be great to start, but you have to start to be great.", author: 'Zig Ziglar' },
+  { text: 'Konsistensi kecil mengalahkan usaha besar yang sesekali.', author: 'Unknown' },
+  { text: 'Your future is created by what you do today, not tomorrow.', author: 'Robert Kiyosaki' },
+  { text: 'Jangan tunda apa yang bisa kamu mulai hari ini.', author: 'Benjamin Franklin' },
+  { text: 'Small daily improvements are the key to staggering long-term results.', author: 'Unknown' },
+  { text: 'Waktu adalah sumber daya paling berharga yang kamu miliki.', author: 'Unknown' },
+  { text: 'Done is better than perfect.', author: 'Sheryl Sandberg' },
+  { text: 'Sukses adalah hasil dari persiapan, kerja keras, dan belajar dari kegagalan.', author: 'Colin Powell' },
+  { text: 'Action is the foundational key to all success.', author: 'Pablo Picasso' },
+  { text: 'Mulailah dari mana kamu berada. Gunakan apa yang kamu punya. Lakukan apa yang kamu bisa.', author: 'Arthur Ashe' },
+  { text: 'The best time to plant a tree was 20 years ago. The second best time is now.', author: 'Chinese Proverb' },
+  { text: 'Setiap ahli pernah menjadi pemula.', author: 'Helen Hayes' },
+  { text: 'Progress, not perfection.', author: 'Unknown' },
+  { text: 'Bangun pagi, kerja keras, dan bersyukur. Itu resep suksesnya.', author: 'Unknown' },
+  { text: 'What you do today can improve all your tomorrows.', author: 'Ralph Marston' },
+  { text: 'Kamu lebih kuat dari yang kamu kira.', author: 'Unknown' },
+  { text: "Believe you can and you're halfway there.", author: 'Theodore Roosevelt' },
+  { text: 'Jangan bandingkan perjalananmu dengan orang lain. Fokus pada prosesmu.', author: 'Unknown' },
+  { text: 'Success is not final, failure is not fatal: it is the courage to continue that counts.', author: 'Winston Churchill' },
+  { text: 'Hari ini sulit, besok lebih sulit, lusa akan indah.', author: 'Jack Ma' },
+  { text: 'The way to get started is to quit talking and begin doing.', author: 'Walt Disney' },
+  { text: 'Satu hal terpenting: jangan pernah berhenti belajar.', author: 'Unknown' },
+];
+
 // ─── Helper: Greeting based on time ───
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -30,6 +77,73 @@ const getStreakTier = (streak) => {
   if (streak >= 7) return { class: 'streak-silver', icon: '⚡' };
   return { class: 'streak-bronze', icon: '🔥' };
 };
+
+// ─── Helper: Get daily quote ───
+const getDailyQuote = () => {
+  const today = new Date();
+  const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86400000);
+  return QUOTES[dayOfYear % QUOTES.length];
+};
+
+// ─── Helper: Format date string YYYY-MM-DD ───
+const toDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// ─── Helper: Google Calendar URL ───
+const generateGoogleCalendarUrl = (event) => {
+  const base = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
+  const title = encodeURIComponent(event.title);
+  const details = encodeURIComponent(event.description || '');
+
+  // Build date/time strings
+  const dateClean = event.date.replace(/-/g, '');
+  let dates;
+  if (event.startTime && event.endTime) {
+    const start = `${dateClean}T${event.startTime.replace(/:/g, '')}00`;
+    const end = `${dateClean}T${event.endTime.replace(/:/g, '')}00`;
+    dates = `${start}/${end}`;
+  } else {
+    // All day event
+    dates = `${dateClean}/${dateClean}`;
+  }
+
+  return `${base}&text=${title}&dates=${dates}&details=${details}`;
+};
+
+// ─── Calendar helpers ───
+const getCalendarDays = (year, month) => {
+  const firstDay = new Date(year, month, 1);
+  // Monday = 0 .. Sunday = 6
+  let startDow = firstDay.getDay() - 1;
+  if (startDow < 0) startDow = 6;
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  const days = [];
+
+  // Previous month fill
+  for (let i = startDow - 1; i >= 0; i--) {
+    const day = daysInPrevMonth - i;
+    const d = new Date(year, month - 1, day);
+    days.push({ date: d, dateStr: toDateStr(d), isCurrentMonth: false });
+  }
+
+  // Current month
+  for (let i = 1; i <= daysInMonth; i++) {
+    const d = new Date(year, month, i);
+    days.push({ date: d, dateStr: toDateStr(d), isCurrentMonth: true });
+  }
+
+  // Next month fill (to make 42 cells = 6 rows)
+  const remaining = 42 - days.length;
+  for (let i = 1; i <= remaining; i++) {
+    const d = new Date(year, month + 1, i);
+    days.push({ date: d, dateStr: toDateStr(d), isCurrentMonth: false });
+  }
+
+  return days;
+};
+
 
 function App() {
   // ══════════════════════════════════════════════
@@ -54,8 +168,26 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [sessCount, setSessCount] = useState(0);
 
+  // ── Calendar State ──
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+  const [calendarEvents, setCalendarEvents] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('lifehub_calendar_events') || '[]'); } catch { return []; }
+  });
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [showAddEventForm, setShowAddEventForm] = useState(false);
+  const [newEvent, setNewEvent] = useState({ title: '', startTime: '', endTime: '', description: '', color: '#818cf8' });
+
+  // ── Quick Notes State ──
+  const [quickNote, setQuickNote] = useState(() => localStorage.getItem('lifehub_quick_note') || '');
+  const [noteSaved, setNoteSaved] = useState(false);
+
   const timerRef = useRef(null);
-  const completeRef = useRef(null);  // selalu up-to-date tanpa dep loop
+  const completeRef = useRef(null);
+  const noteTimeoutRef = useRef(null);
 
   const baseUrl = import.meta.env.VITE_API_URL || 'https://lifehub-webapp-production.up.railway.app/api.';
   if (token) axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -103,6 +235,48 @@ function App() {
   const deleteHabit = async (id) => { await axios.delete(`${baseUrl}/habits/${id}`); fetchAllData(); fetchStats(); };
   const handleAddDiary = async (e) => { e.preventDefault(); await axios.post(`${baseUrl}/diaries`, newDiary); setNewDiary({ title: '', content: '', mood: 'Neutral' }); fetchAllData(); fetchStats(); };
   const deleteDiary = async (id) => { await axios.delete(`${baseUrl}/diaries/${id}`); fetchAllData(); fetchStats(); };
+
+  // ══════════════════════════════════════════════
+  // 3b. CALENDAR CRUD (localStorage)
+  // ══════════════════════════════════════════════
+  const saveCalendarEvents = (events) => {
+    setCalendarEvents(events);
+    localStorage.setItem('lifehub_calendar_events', JSON.stringify(events));
+  };
+
+  const handleAddEvent = (e) => {
+    e.preventDefault();
+    if (!newEvent.title || !selectedDate) return;
+    const event = {
+      id: Date.now(),
+      title: newEvent.title,
+      date: selectedDate,
+      startTime: newEvent.startTime || '',
+      endTime: newEvent.endTime || '',
+      description: newEvent.description || '',
+      color: newEvent.color,
+    };
+    saveCalendarEvents([...calendarEvents, event]);
+    setNewEvent({ title: '', startTime: '', endTime: '', description: '', color: '#818cf8' });
+    setShowAddEventForm(false);
+    Swal.fire({ icon: 'success', title: 'Event Ditambahkan!', background: '#0d0d1a', color: '#fff', timer: 1200, showConfirmButton: false });
+  };
+
+  const deleteEvent = (id) => {
+    saveCalendarEvents(calendarEvents.filter(e => e.id !== id));
+  };
+
+  // ── Quick Notes handler ──
+  const handleNoteChange = (val) => {
+    setQuickNote(val);
+    setNoteSaved(false);
+    clearTimeout(noteTimeoutRef.current);
+    noteTimeoutRef.current = setTimeout(() => {
+      localStorage.setItem('lifehub_quick_note', val);
+      setNoteSaved(true);
+      setTimeout(() => setNoteSaved(false), 2000);
+    }, 600);
+  };
 
   // ══════════════════════════════════════════════
   // 4. POMODORO LOGIC
@@ -175,6 +349,48 @@ function App() {
   const totalStreak = habits.reduce((a, h) => a + h.streak, 0);
   const userInitials = user.name ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '?';
 
+  // Calendar computed
+  const calDays = getCalendarDays(currentMonth.year, currentMonth.month);
+  const todayStr = toDateStr(new Date());
+  const dailyQuote = getDailyQuote();
+
+  // Events grouped by date for quick lookup
+  const eventsByDate = {};
+  calendarEvents.forEach(ev => {
+    if (!eventsByDate[ev.date]) eventsByDate[ev.date] = [];
+    eventsByDate[ev.date].push(ev);
+  });
+  // Tasks by created_at date
+  const tasksByDate = {};
+  tasks.forEach(t => {
+    if (t.created_at) {
+      const d = t.created_at.split('T')[0];
+      if (!tasksByDate[d]) tasksByDate[d] = [];
+      tasksByDate[d].push(t);
+    }
+  });
+  // Diaries by created_at date
+  const diariesByDate = {};
+  diaries.forEach(d => {
+    if (d.created_at) {
+      const ds = d.created_at.split('T')[0];
+      if (!diariesByDate[ds]) diariesByDate[ds] = [];
+      diariesByDate[ds].push(d);
+    }
+  });
+
+  // Events for selected date
+  const selectedEvents = selectedDate ? (eventsByDate[selectedDate] || []) : [];
+  const selectedTasks = selectedDate ? (tasksByDate[selectedDate] || []) : [];
+  const selectedDiaries = selectedDate ? (diariesByDate[selectedDate] || []) : [];
+
+  const prevMonth = () => setCurrentMonth(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 });
+  const nextMonth = () => setCurrentMonth(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 });
+  const goToday = () => {
+    const now = new Date();
+    setCurrentMonth({ year: now.getFullYear(), month: now.getMonth() });
+  };
+
   // ══════════════════════════════════════════════
   // 6. LOGIN PAGE
   // ══════════════════════════════════════════════
@@ -200,23 +416,11 @@ function App() {
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ position: 'relative' }}>
               <i className="fas fa-envelope" style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#555577', fontSize: '0.85rem' }}></i>
-              <input
-                type="email" placeholder="Email" value={email}
-                onChange={e => setEmail(e.target.value)}
-                className="input-premium"
-                style={{ paddingLeft: '46px' }}
-                required
-              />
+              <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="input-premium" style={{ paddingLeft: '46px' }} required />
             </div>
             <div style={{ position: 'relative' }}>
               <i className="fas fa-lock" style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#555577', fontSize: '0.85rem' }}></i>
-              <input
-                type="password" placeholder="Password" value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="input-premium"
-                style={{ paddingLeft: '46px' }}
-                required
-              />
+              <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="input-premium" style={{ paddingLeft: '46px' }} required />
             </div>
             <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '8px', padding: '16px' }}>
               <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
@@ -226,7 +430,6 @@ function App() {
             </button>
           </form>
 
-          {/* Decorative bottom */}
           <div style={{ textAlign: 'center', marginTop: '28px' }}>
             <p style={{ color: '#333355', fontSize: '0.75rem', fontWeight: 500 }}>
               ✨ Kelola hidup, bangun kebiasaan, raih tujuan
@@ -242,6 +445,7 @@ function App() {
   // ══════════════════════════════════════════════
   const TABS = [
     { id: 'dashboard', icon: 'fas fa-th-large', label: 'Dashboard' },
+    { id: 'calendar', icon: 'fas fa-calendar-days', label: 'Calendar' },
     { id: 'tasks', icon: 'fas fa-check-double', label: 'Tasks' },
     { id: 'habits', icon: 'fas fa-bolt', label: 'Habits' },
     { id: 'diary', icon: 'fas fa-book', label: 'Diary' },
@@ -388,12 +592,40 @@ function App() {
               </div>
             </div>
 
+            {/* ── Quote Card + Quick Notes ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '24px' }}>
+              {/* Daily Quote */}
+              <div className="quote-card">
+                <p className="quote-text">{dailyQuote.text}</p>
+                <p className="quote-author">— {dailyQuote.author}</p>
+              </div>
+
+              {/* Quick Notes */}
+              <div className="glass-card quick-notes-card" style={{ padding: '20px 24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontWeight: 700, fontSize: '0.85rem', color: '#ddddf0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="fas fa-sticky-note" style={{ color: '#fbbf24', fontSize: '0.8rem' }}></i>
+                    Quick Notes
+                  </h4>
+                  <span className={`notes-saved-badge ${noteSaved ? 'visible' : ''}`}>
+                    <i className="fas fa-check-circle"></i> Tersimpan
+                  </span>
+                </div>
+                <textarea
+                  className="quick-notes-textarea"
+                  placeholder="Tulis catatan singkat, ide, atau reminder..."
+                  value={quickNote}
+                  onChange={e => handleNoteChange(e.target.value)}
+                ></textarea>
+              </div>
+            </div>
+
             {/* Quick Actions */}
-            <div style={{ marginTop: '32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+            <div style={{ marginTop: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
               <button
                 onClick={() => setActiveTab('tasks')}
                 className="glass-card"
-                style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: '1px solid rgba(129,140,248,0.08)', textAlign: 'left', animation: 'fadeInUp 0.5s ease-out 0.4s both' }}
+                style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: '1px solid rgba(129,140,248,0.08)', textAlign: 'left', animation: 'fadeInUp 0.5s ease-out 0.5s both' }}
               >
                 <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(129,140,248,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', flexShrink: 0 }}>
                   <i className="fas fa-plus"></i>
@@ -404,9 +636,22 @@ function App() {
                 </div>
               </button>
               <button
+                onClick={() => setActiveTab('calendar')}
+                className="glass-card"
+                style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: '1px solid rgba(129,140,248,0.08)', textAlign: 'left', animation: 'fadeInUp 0.5s ease-out 0.55s both' }}
+              >
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(45,212,191,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2dd4bf', flexShrink: 0 }}>
+                  <i className="fas fa-calendar-days"></i>
+                </div>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ddddf0' }}>Buka Kalender</p>
+                  <p style={{ fontSize: '0.75rem', color: '#555577' }}>Jadwalkan kegiatan</p>
+                </div>
+              </button>
+              <button
                 onClick={() => setActiveTab('focus')}
                 className="glass-card"
-                style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: '1px solid rgba(129,140,248,0.08)', textAlign: 'left', animation: 'fadeInUp 0.5s ease-out 0.5s both' }}
+                style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: '1px solid rgba(129,140,248,0.08)', textAlign: 'left', animation: 'fadeInUp 0.5s ease-out 0.6s both' }}
               >
                 <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(96,165,250,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60a5fa', flexShrink: 0 }}>
                   <i className="fas fa-clock"></i>
@@ -419,7 +664,7 @@ function App() {
               <button
                 onClick={() => setActiveTab('diary')}
                 className="glass-card"
-                style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: '1px solid rgba(129,140,248,0.08)', textAlign: 'left', animation: 'fadeInUp 0.5s ease-out 0.6s both' }}
+                style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: '1px solid rgba(129,140,248,0.08)', textAlign: 'left', animation: 'fadeInUp 0.5s ease-out 0.65s both' }}
               >
                 <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(74,222,128,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4ade80', flexShrink: 0 }}>
                   <i className="fas fa-pen-fancy"></i>
@@ -429,6 +674,254 @@ function App() {
                   <p style={{ fontSize: '0.75rem', color: '#555577' }}>Ceritakan harimu</p>
                 </div>
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─────────── CALENDAR ─────────── */}
+        {activeTab === 'calendar' && (
+          <div style={{ maxWidth: '1000px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+            <div className="section-header">
+              <h2 className="section-title">📅 Calendar</h2>
+              <p className="section-subtitle">Jadwalkan kegiatan dan sinkronkan ke Google Calendar</p>
+            </div>
+
+            {/* Month Navigation */}
+            <div className="cal-nav" style={{ marginTop: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button onClick={prevMonth} className="cal-nav-btn">
+                  <i className="fas fa-chevron-left"></i>
+                </button>
+                <button onClick={nextMonth} className="cal-nav-btn">
+                  <i className="fas fa-chevron-right"></i>
+                </button>
+              </div>
+              <span className="cal-month-label">
+                {MONTH_NAMES[currentMonth.month]} {currentMonth.year}
+              </span>
+              <button onClick={goToday} className="cal-nav-btn" style={{ width: 'auto', padding: '0 14px', fontSize: '0.75rem', fontWeight: 700 }}>
+                Hari ini
+              </button>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="cal-grid">
+              {/* Day headers */}
+              {DAY_NAMES.map(d => (
+                <div key={d} className="cal-day-header">{d}</div>
+              ))}
+
+              {/* Day cells */}
+              {calDays.map((day, i) => {
+                const hasEvents = eventsByDate[day.dateStr]?.length > 0;
+                const hasTasks = tasksByDate[day.dateStr]?.length > 0;
+                const hasDiaries = diariesByDate[day.dateStr]?.length > 0;
+                const isToday = day.dateStr === todayStr;
+                const isSelected = day.dateStr === selectedDate;
+
+                return (
+                  <div
+                    key={i}
+                    className={`cal-cell ${!day.isCurrentMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}`}
+                    onClick={() => { setSelectedDate(day.dateStr); setShowEventModal(true); setShowAddEventForm(false); }}
+                  >
+                    <span className="cal-day-num">{day.date.getDate()}</span>
+                    <div className="cal-dots">
+                      {hasEvents && (eventsByDate[day.dateStr] || []).slice(0, 3).map((ev, ei) => (
+                        <div key={ei} className="cal-dot" style={{ background: ev.color }}></div>
+                      ))}
+                      {hasTasks && <div className="cal-dot" style={{ background: '#818cf8' }}></div>}
+                      {hasDiaries && <div className="cal-dot" style={{ background: '#4ade80' }}></div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: '20px', marginTop: '20px', animation: 'fadeIn 0.4s ease-out 0.2s both' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#818cf8' }}></div>
+                <span style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 600 }}>Tasks</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4ade80' }}></div>
+                <span style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 600 }}>Diary</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }}></div>
+                <span style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 600 }}>Events</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─────────── EVENT MODAL ─────────── */}
+        {showEventModal && selectedDate && (
+          <div className="modal-overlay" onClick={() => { setShowEventModal(false); setShowAddEventForm(false); }}>
+            <div className="modal-card" onClick={e => e.stopPropagation()}>
+              <button onClick={() => { setShowEventModal(false); setShowAddEventForm(false); }} className="btn-close">
+                <i className="fas fa-times" style={{ fontSize: '0.75rem' }}></i>
+              </button>
+
+              {/* Modal Header */}
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#f0f0f5', marginBottom: '4px' }}>
+                  📅 {new Date(selectedDate + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: '#555577' }}>
+                  {selectedEvents.length + selectedTasks.length + selectedDiaries.length} item di tanggal ini
+                </p>
+              </div>
+
+              {/* Events list */}
+              {selectedEvents.length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#666688', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+                    Events
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {selectedEvents.map((ev, i) => (
+                      <div key={ev.id} className="event-item" style={{ animationDelay: `${i * 0.05}s` }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                          <div className="event-color-dot" style={{ background: ev.color, marginTop: '5px' }}></div>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#f0f0f5' }}>{ev.title}</p>
+                            {ev.startTime && (
+                              <p style={{ fontSize: '0.75rem', color: '#666688', marginTop: '2px' }}>
+                                <i className="fas fa-clock" style={{ fontSize: '0.65rem', marginRight: '4px' }}></i>
+                                {ev.startTime}{ev.endTime ? ` — ${ev.endTime}` : ''}
+                              </p>
+                            )}
+                            {ev.description && (
+                              <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '6px' }}>{ev.description}</p>
+                            )}
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                              <a
+                                href={generateGoogleCalendarUrl(ev)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-gcal"
+                              >
+                                <i className="fab fa-google"></i>
+                                Google Calendar
+                              </a>
+                              <button onClick={() => deleteEvent(ev.id)} className="btn-delete" style={{ fontSize: '0.75rem' }}>
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tasks on this date */}
+              {selectedTasks.length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#666688', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+                    <i className="fas fa-check-double" style={{ marginRight: '6px', color: '#818cf8' }}></i>Tasks
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {selectedTasks.map(t => (
+                      <div key={t.id} style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(129,140,248,0.06)', border: '1px solid rgba(129,140,248,0.08)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: t.is_done ? '#4ade80' : '#818cf8', flexShrink: 0 }}></div>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: t.is_done ? '#666' : '#ddddf0', textDecoration: t.is_done ? 'line-through' : 'none' }}>{t.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Diary entries on this date */}
+              {selectedDiaries.length > 0 && (
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: '#666688', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+                    <i className="fas fa-book" style={{ marginRight: '6px', color: '#4ade80' }}></i>Diary
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {selectedDiaries.map(d => (
+                      <div key={d.id} style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.08)' }}>
+                        <p style={{ fontWeight: 700, fontSize: '0.85rem', color: '#ddddf0' }}>{d.title}</p>
+                        <p style={{ fontSize: '0.75rem', color: '#666688', marginTop: '2px' }}>{d.mood}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Add Event Form */}
+              {!showAddEventForm ? (
+                <button
+                  onClick={() => setShowAddEventForm(true)}
+                  className="btn-primary"
+                  style={{ width: '100%', marginTop: '8px' }}
+                >
+                  <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <i className="fas fa-plus"></i>
+                    Tambah Event Baru
+                  </span>
+                </button>
+              ) : (
+                <div style={{ marginTop: '8px', padding: '20px', borderRadius: '16px', background: 'rgba(129,140,248,0.04)', border: '1px solid rgba(129,140,248,0.1)' }}>
+                  <h4 style={{ fontWeight: 800, fontSize: '0.9rem', color: '#ddddf0', marginBottom: '16px' }}>
+                    ✨ Event Baru
+                  </h4>
+                  <form onSubmit={handleAddEvent} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <input
+                      type="text" placeholder="Judul event..." value={newEvent.title}
+                      onChange={e => setNewEvent({ ...newEvent, title: e.target.value })}
+                      className="input-premium" required
+                    />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Mulai</label>
+                        <input type="time" value={newEvent.startTime} onChange={e => setNewEvent({ ...newEvent, startTime: e.target.value })} className="input-premium" />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Selesai</label>
+                        <input type="time" value={newEvent.endTime} onChange={e => setNewEvent({ ...newEvent, endTime: e.target.value })} className="input-premium" />
+                      </div>
+                    </div>
+                    <textarea
+                      placeholder="Deskripsi (opsional)..." value={newEvent.description}
+                      onChange={e => setNewEvent({ ...newEvent, description: e.target.value })}
+                      className="textarea-premium" style={{ minHeight: '70px' }}
+                    ></textarea>
+
+                    {/* Color Picker */}
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, display: 'block', marginBottom: '8px' }}>Warna</label>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {EVENT_COLORS.map(c => (
+                          <div
+                            key={c}
+                            className={`color-option ${newEvent.color === c ? 'selected' : ''}`}
+                            style={{ background: c }}
+                            onClick={() => setNewEvent({ ...newEvent, color: c })}
+                          ></div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                        <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                          <i className="fas fa-check"></i> Simpan
+                        </span>
+                      </button>
+                      <button type="button" onClick={() => setShowAddEventForm(false)} style={{
+                        padding: '12px 20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.06)',
+                        background: 'rgba(255,255,255,0.03)', color: '#888', cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 600
+                      }}>
+                        Batal
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -493,8 +986,7 @@ function App() {
                         {t.is_done && <i className="fas fa-check" style={{ fontSize: '10px', color: 'white' }}></i>}
                       </div>
                       <span style={{
-                        fontWeight: 600,
-                        fontSize: '0.95rem',
+                        fontWeight: 600, fontSize: '0.95rem',
                         color: t.is_done ? '#444466' : '#ddddf0',
                         textDecoration: t.is_done ? 'line-through' : 'none',
                         transition: 'all 0.3s ease'
@@ -556,22 +1048,17 @@ function App() {
                           </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <button onClick={() => checkInHabit(h.id)} className="habit-checkin-btn">
-                            🔥
-                          </button>
+                          <button onClick={() => checkInHabit(h.id)} className="habit-checkin-btn">🔥</button>
                           <button onClick={() => deleteHabit(h.id)} className="btn-delete">
                             <i className="fas fa-trash" style={{ fontSize: '0.8rem' }}></i>
                           </button>
                         </div>
                       </div>
-                      {/* Mini streak bar */}
                       <div style={{ marginTop: '16px', height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
                         <div style={{
-                          width: `${Math.min(h.streak / 30 * 100, 100)}%`,
-                          height: '100%',
+                          width: `${Math.min(h.streak / 30 * 100, 100)}%`, height: '100%',
                           background: h.streak >= 30 ? 'linear-gradient(90deg, #f59e0b, #fcd34d)' : h.streak >= 7 ? 'linear-gradient(90deg, #94a3b8, #cbd5e1)' : 'linear-gradient(90deg, #a78242, #cd9b5a)',
-                          borderRadius: '3px',
-                          transition: 'width 0.6s ease'
+                          borderRadius: '3px', transition: 'width 0.6s ease'
                         }}></div>
                       </div>
                     </div>
@@ -598,27 +1085,14 @@ function App() {
                   Tulis Jurnal Baru
                 </h3>
                 <form onSubmit={handleAddDiary} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <input
-                    type="text" placeholder="Judul..." value={newDiary.title}
-                    onChange={e => setNewDiary({ ...newDiary, title: e.target.value })}
-                    className="input-premium"
-                  />
-                  <select
-                    value={newDiary.mood}
-                    onChange={e => setNewDiary({ ...newDiary, mood: e.target.value })}
-                    className="select-premium"
-                  >
+                  <input type="text" placeholder="Judul..." value={newDiary.title} onChange={e => setNewDiary({ ...newDiary, title: e.target.value })} className="input-premium" />
+                  <select value={newDiary.mood} onChange={e => setNewDiary({ ...newDiary, mood: e.target.value })} className="select-premium">
                     <option value="Happy">😁 Happy</option>
                     <option value="Neutral">😐 Neutral</option>
                     <option value="Sad">😢 Sad</option>
                     <option value="On Fire">🔥 On Fire</option>
                   </select>
-                  <textarea
-                    placeholder="Ceritakan harimu..."
-                    value={newDiary.content}
-                    onChange={e => setNewDiary({ ...newDiary, content: e.target.value })}
-                    className="textarea-premium"
-                  ></textarea>
+                  <textarea placeholder="Ceritakan harimu..." value={newDiary.content} onChange={e => setNewDiary({ ...newDiary, content: e.target.value })} className="textarea-premium"></textarea>
                   <button type="submit" className="btn-primary" style={{ width: '100%' }}>
                     <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                       <i className="fas fa-paper-plane"></i>
@@ -669,15 +1143,10 @@ function App() {
 
             {/* Ambient background glow */}
             <div style={{
-              position: 'absolute',
-              width: '500px', height: '500px',
-              borderRadius: '50%',
-              top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
+              position: 'absolute', width: '500px', height: '500px', borderRadius: '50%',
+              top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
               background: `radial-gradient(circle, ${curMode.color}08, transparent 70%)`,
-              filter: 'blur(60px)',
-              pointerEvents: 'none',
-              transition: 'background 0.6s ease',
+              filter: 'blur(60px)', pointerEvents: 'none', transition: 'background 0.6s ease',
               animation: isRunning ? 'breathe 4s ease-in-out infinite' : 'none',
             }}></div>
 
@@ -690,18 +1159,12 @@ function App() {
 
             {/* Mode Selector */}
             <div style={{
-              display: 'flex', gap: '6px',
-              marginBottom: '40px', marginTop: '16px',
-              padding: '6px',
-              borderRadius: '16px',
-              background: 'rgba(12, 12, 28, 0.5)',
-              border: '1px solid rgba(255,255,255,0.05)',
+              display: 'flex', gap: '6px', marginBottom: '40px', marginTop: '16px',
+              padding: '6px', borderRadius: '16px',
+              background: 'rgba(12, 12, 28, 0.5)', border: '1px solid rgba(255,255,255,0.05)',
             }}>
               {Object.entries(MODES).map(([key, val]) => (
-                <button
-                  key={key}
-                  onClick={() => changeMode(key)}
-                  className="focus-mode-tab"
+                <button key={key} onClick={() => changeMode(key)} className="focus-mode-tab"
                   style={pomMode === key
                     ? { background: val.color + '15', color: val.color, borderColor: val.color + '30', boxShadow: `0 0 16px ${val.color}10` }
                     : { color: '#555577' }}
@@ -718,48 +1181,31 @@ function App() {
               transition: 'filter 0.6s ease',
             }}>
               <svg width="280" height="280" viewBox="0 0 280 280">
-                {/* Outer subtle ring */}
                 <circle cx="140" cy="140" r={RADIUS + 14} fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="1" />
-                {/* Track ring */}
                 <circle cx="140" cy="140" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="10" />
-                {/* Progress ring */}
                 <circle cx="140" cy="140" r={RADIUS} fill="none"
                   stroke={curMode.color} strokeWidth="10" strokeLinecap="round"
                   strokeDasharray={CIRC} strokeDashoffset={offset}
                   style={{ transform: 'rotate(-90deg)', transformOrigin: '140px 140px', transition: 'stroke-dashoffset 1s linear, stroke 0.4s' }}
                 />
-                {/* Glow ring behind progress */}
                 <circle cx="140" cy="140" r={RADIUS} fill="none"
                   stroke={curMode.color} strokeWidth="10" strokeLinecap="round"
                   strokeDasharray={CIRC} strokeDashoffset={offset}
                   style={{ transform: 'rotate(-90deg)', transformOrigin: '140px 140px', transition: 'stroke-dashoffset 1s linear, stroke 0.4s', filter: `blur(8px)`, opacity: 0.3 }}
                 />
-                {/* Dot at tip */}
                 {pct < 1 && (
                   <circle cx={dotX} cy={dotY} r="6" fill={curMode.color}
                     style={{ filter: `drop-shadow(0 0 8px ${curMode.color})` }} />
                 )}
-                {/* Time display */}
                 <text x="140" y="124" textAnchor="middle" fill="white" fontSize="42" fontWeight="900" fontFamily="'JetBrains Mono', 'Courier New', monospace">{fmt(timeLeft)}</text>
                 <text x="140" y="152" textAnchor="middle" fill={curMode.color} fontSize="11" fontWeight="700" letterSpacing="3">{curMode.label.toUpperCase()}</text>
                 <text x="140" y="174" textAnchor="middle" fill="#444466" fontSize="11" fontWeight="600">Sesi #{sessCount + 1}</text>
               </svg>
 
-              {/* Pulse rings when running */}
               {isRunning && (
                 <>
-                  <div style={{
-                    position: 'absolute', inset: '-10px', borderRadius: '50%',
-                    border: `2px solid ${curMode.color}`,
-                    animation: 'ring-pulse 2s ease-out infinite',
-                    pointerEvents: 'none',
-                  }}></div>
-                  <div style={{
-                    position: 'absolute', inset: '-10px', borderRadius: '50%',
-                    border: `2px solid ${curMode.color}`,
-                    animation: 'ring-pulse 2s ease-out 0.7s infinite',
-                    pointerEvents: 'none',
-                  }}></div>
+                  <div style={{ position: 'absolute', inset: '-10px', borderRadius: '50%', border: `2px solid ${curMode.color}`, animation: 'ring-pulse 2s ease-out infinite', pointerEvents: 'none' }}></div>
+                  <div style={{ position: 'absolute', inset: '-10px', borderRadius: '50%', border: `2px solid ${curMode.color}`, animation: 'ring-pulse 2s ease-out 0.7s infinite', pointerEvents: 'none' }}></div>
                 </>
               )}
             </div>
@@ -769,10 +1215,7 @@ function App() {
               <button onClick={resetTimer} className="focus-control-btn">
                 <i className="fas fa-redo" style={{ fontSize: '0.85rem' }}></i>
               </button>
-
-              <button
-                onClick={toggleTimer}
-                className="focus-play-btn"
+              <button onClick={toggleTimer} className="focus-play-btn"
                 style={{
                   background: isRunning ? `${curMode.color}12` : curMode.color,
                   borderColor: curMode.color,
@@ -782,7 +1225,6 @@ function App() {
               >
                 <i className={`fas ${isRunning ? 'fa-pause' : 'fa-play'} ${!isRunning ? 'ml-1' : ''}`}></i>
               </button>
-
               <div className="focus-control-btn" style={{ cursor: 'default' }}>
                 <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>{Math.round((1 - pct) * 100)}%</span>
               </div>
@@ -794,11 +1236,7 @@ function App() {
                 <span style={{ fontSize: '0.7rem', color: '#444466', fontWeight: 700, marginRight: '4px' }}>Sesi selesai:</span>
                 {Array.from({ length: Math.min(sessCount, 8) }).map((_, i) => (
                   <div key={i} className="session-dot"
-                    style={{
-                      background: MODES.focus.color,
-                      boxShadow: `0 0 8px ${MODES.focus.shadow}`,
-                      animationDelay: `${i * 0.08}s`
-                    }}
+                    style={{ background: MODES.focus.color, boxShadow: `0 0 8px ${MODES.focus.shadow}`, animationDelay: `${i * 0.08}s` }}
                   />
                 ))}
                 {sessCount > 8 && <span style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700 }}>+{sessCount - 8}</span>}
