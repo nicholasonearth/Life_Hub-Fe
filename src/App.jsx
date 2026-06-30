@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import './App.css';
 
 // ─────────────────────────────────────────────
 // Konfigurasi Mode Pomodoro
@@ -13,6 +14,22 @@ const MODES = {
 };
 const RADIUS = 110;
 const CIRC = 2 * Math.PI * RADIUS;
+
+// ─── Helper: Greeting based on time ───
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Selamat Pagi';
+  if (h < 17) return 'Selamat Siang';
+  if (h < 20) return 'Selamat Sore';
+  return 'Selamat Malam';
+};
+
+// ─── Helper: Streak tier ───
+const getStreakTier = (streak) => {
+  if (streak >= 30) return { class: 'streak-gold', icon: '👑' };
+  if (streak >= 7) return { class: 'streak-silver', icon: '⚡' };
+  return { class: 'streak-bronze', icon: '🔥' };
+};
 
 function App() {
   // ══════════════════════════════════════════════
@@ -52,9 +69,9 @@ function App() {
       const res = await axios.post(`${baseUrl}/login`, { email, password });
       localStorage.setItem('auth_token', res.data.access_token);
       setToken(res.data.access_token);
-      Swal.fire({ icon: 'success', title: 'Berhasil Masuk!', background: '#111', color: '#fff', timer: 1500, showConfirmButton: false });
+      Swal.fire({ icon: 'success', title: 'Berhasil Masuk!', background: '#0d0d1a', color: '#fff', timer: 1500, showConfirmButton: false });
     } catch {
-      Swal.fire({ icon: 'error', title: 'Login Gagal', text: 'Email atau password salah.', background: '#111', color: '#fff' });
+      Swal.fire({ icon: 'error', title: 'Login Gagal', text: 'Email atau password salah.', background: '#0d0d1a', color: '#fff' });
     }
   };
 
@@ -87,7 +104,8 @@ function App() {
   const handleAddDiary = async (e) => { e.preventDefault(); await axios.post(`${baseUrl}/diaries`, newDiary); setNewDiary({ title: '', content: '', mood: 'Neutral' }); fetchAllData(); fetchStats(); };
   const deleteDiary = async (id) => { await axios.delete(`${baseUrl}/diaries/${id}`); fetchAllData(); fetchStats(); };
 
-
+  // ══════════════════════════════════════════════
+  // 4. POMODORO LOGIC
   // ══════════════════════════════════════════════
   const completeSession = async (currentMode, currentCount) => {
     clearInterval(timerRef.current);
@@ -106,18 +124,18 @@ function App() {
           html: leveled_up
             ? `<div style="font-size:2.2rem;color:#818cf8;font-weight:900;margin-bottom:6px">Lv.${level}</div><div style="color:#aaa">+${xp_gained} XP • Kamu naik level!</div>`
             : `<div style="color:#818cf8;font-weight:bold;font-size:1.3rem;margin-bottom:4px">+${xp_gained} XP</div><div style="color:#aaa;font-size:0.9rem">Sesi ke-${newCount} selesai. Waktunya istirahat!</div>`,
-          background: '#0a0a0a',
+          background: '#0d0d1a',
           color: '#fff',
           confirmButtonColor: '#818cf8',
           confirmButtonText: 'Lanjut! 💪',
         });
       } catch {
-        await Swal.fire({ title: '🍅 Fokus Selesai!', text: `Sesi ke-${newCount} selesai!`, background: '#0a0a0a', color: '#fff', timer: 2500, showConfirmButton: false });
+        await Swal.fire({ title: '🍅 Fokus Selesai!', text: `Sesi ke-${newCount} selesai!`, background: '#0d0d1a', color: '#fff', timer: 2500, showConfirmButton: false });
       }
       const next = newCount % 4 === 0 ? 'long' : 'short';
       setPomMode(next); setTimeLeft(MODES[next].duration);
     } else {
-      await Swal.fire({ title: '💪 Break Selesai!', text: 'Siap fokus lagi?', background: '#0a0a0a', color: '#fff', timer: 2000, showConfirmButton: false });
+      await Swal.fire({ title: '💪 Break Selesai!', text: 'Siap fokus lagi?', background: '#0d0d1a', color: '#fff', timer: 2000, showConfirmButton: false });
       setPomMode('focus'); setTimeLeft(MODES.focus.duration);
     }
   };
@@ -145,24 +163,75 @@ function App() {
 
   const pct = timeLeft / MODES[pomMode].duration;
   const offset = CIRC * (1 - pct);
-  const cur = MODES[pomMode];
+  const curMode = MODES[pomMode];
   const dotAngle = -Math.PI / 2 + (1 - pct) * 2 * Math.PI;
   const dotX = 140 + RADIUS * Math.cos(dotAngle);
   const dotY = 140 + RADIUS * Math.sin(dotAngle);
+
+  // Computed values
+  const completedTasks = tasks.filter(t => t.is_done).length;
+  const pendingTasks = tasks.filter(t => !t.is_done).length;
+  const taskCompletionPct = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+  const totalStreak = habits.reduce((a, h) => a + h.streak, 0);
+  const userInitials = user.name ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : '?';
 
   // ══════════════════════════════════════════════
   // 6. LOGIN PAGE
   // ══════════════════════════════════════════════
   if (!token) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#0a0a0a] text-white">
-        <div className="w-full max-w-md bg-[#111] p-8 rounded-3xl border border-gray-800 shadow-2xl">
-          <h1 className="text-3xl font-extrabold text-center mb-6">Life<span className="text-indigo-400">Hub</span></h1>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-[#1a1a1a] p-4 rounded-xl border border-gray-700 outline-none" required />
-            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-[#1a1a1a] p-4 rounded-xl border border-gray-700 outline-none" required />
-            <button className="w-full bg-indigo-500 font-bold py-4 rounded-xl hover:bg-indigo-600 transition">Login</button>
+      <div className="login-bg">
+        {/* Floating orbs */}
+        <div className="login-orb login-orb-1"></div>
+        <div className="login-orb login-orb-2"></div>
+        <div className="login-orb login-orb-3"></div>
+
+        <div className="login-card">
+          {/* Logo */}
+          <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+            <h1 className="logo-text-large" style={{ marginBottom: '8px' }}>
+              Life<span className="logo-gradient">Hub</span>
+            </h1>
+            <p style={{ color: '#555577', fontSize: '0.9rem', fontWeight: 500 }}>
+              Your Productivity Companion
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ position: 'relative' }}>
+              <i className="fas fa-envelope" style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#555577', fontSize: '0.85rem' }}></i>
+              <input
+                type="email" placeholder="Email" value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="input-premium"
+                style={{ paddingLeft: '46px' }}
+                required
+              />
+            </div>
+            <div style={{ position: 'relative' }}>
+              <i className="fas fa-lock" style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#555577', fontSize: '0.85rem' }}></i>
+              <input
+                type="password" placeholder="Password" value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="input-premium"
+                style={{ paddingLeft: '46px' }}
+                required
+              />
+            </div>
+            <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '8px', padding: '16px' }}>
+              <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <i className="fas fa-arrow-right-to-bracket"></i>
+                Masuk ke LifeHub
+              </span>
+            </button>
           </form>
+
+          {/* Decorative bottom */}
+          <div style={{ textAlign: 'center', marginTop: '28px' }}>
+            <p style={{ color: '#333355', fontSize: '0.75rem', fontWeight: 500 }}>
+              ✨ Kelola hidup, bangun kebiasaan, raih tujuan
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -176,246 +245,649 @@ function App() {
     { id: 'tasks', icon: 'fas fa-check-double', label: 'Tasks' },
     { id: 'habits', icon: 'fas fa-bolt', label: 'Habits' },
     { id: 'diary', icon: 'fas fa-book', label: 'Diary' },
-    { id: 'focus', icon: 'fas fa-clock', label: '⏱ Focus Mode' },
+    { id: 'focus', icon: 'fas fa-clock', label: 'Focus Mode' },
     { id: 'analytics', icon: 'fas fa-chart-pie', label: 'Analytics' },
   ];
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] text-white font-['Plus_Jakarta_Sans'] overflow-hidden">
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#06060e', fontFamily: "'Outfit', sans-serif" }}>
 
-      {/* ── SIDEBAR ── */}
-      <aside className="w-72 bg-[#111] border-r border-gray-800 flex flex-col p-6 shrink-0">
-        <h1 className="text-2xl font-extrabold mb-10 text-center">Life<span className="text-indigo-400">Hub</span></h1>
+      {/* ══════════════════ SIDEBAR ══════════════════ */}
+      <aside className="sidebar">
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+          <h1 className="logo-text">
+            Life<span className="logo-gradient">Hub</span>
+          </h1>
+        </div>
 
-        <nav className="flex-1 space-y-1">
+        {/* User profile mini */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '12px',
+          padding: '14px 16px', borderRadius: '16px',
+          background: 'rgba(15, 15, 35, 0.4)',
+          border: '1px solid rgba(255,255,255,0.04)',
+          marginBottom: '28px'
+        }}>
+          <div className="user-avatar">{userInitials}</div>
+          <div style={{ overflow: 'hidden' }}>
+            <p style={{ fontWeight: 700, fontSize: '0.85rem', color: '#ddddf0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user.name || 'Player'}
+            </p>
+            <p style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 500 }}>
+              Level {user.level} Explorer
+            </p>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {TABS.map(t => (
-            <button key={t.id}
+            <button
+              key={t.id}
               onClick={() => { setActiveTab(t.id); if (t.id === 'analytics') fetchStats(); }}
-              className={`w-full text-left px-4 py-3 rounded-xl font-bold capitalize transition-all flex items-center gap-3
-                ${activeTab === t.id ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-gray-400 hover:bg-[#1a1a1a]'}`}>
-              <i className={`${t.icon} w-5 text-center text-sm`}></i>
+              className={`nav-btn ${activeTab === t.id ? 'active' : ''}`}
+            >
+              <i className={`${t.icon}`} style={{ width: '18px', textAlign: 'center', fontSize: '0.85rem' }}></i>
               {t.label}
             </button>
           ))}
         </nav>
 
-        {/* Level & XP */}
-        <div className="mb-5 p-4 bg-[#1a1a1a] rounded-2xl border border-gray-800">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-black text-indigo-400 tracking-widest uppercase">Player Level</span>
-            <span className="text-xs font-black text-white bg-indigo-500 px-2 py-0.5 rounded">LV {user.level}</span>
+        {/* XP / Level */}
+        <div className="xp-container">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#666688', textTransform: 'uppercase', letterSpacing: '2px' }}>
+              Experience
+            </span>
+            <span className="level-badge">
+              LV {user.level}
+            </span>
           </div>
-          <div className="w-full bg-[#0a0a0a] h-2 rounded-full overflow-hidden border border-gray-800">
-            <div className="bg-gradient-to-r from-indigo-600 to-indigo-400 h-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]"
-              style={{ width: `${Math.min(user.experience, 100)}%` }}></div>
+          <div className="xp-bar-track">
+            <div className="xp-bar-fill" style={{ width: `${Math.min(user.experience, 100)}%` }}></div>
           </div>
-          <div className="flex justify-between mt-1.5">
-            <span className="text-[10px] text-gray-500 font-bold">{user.experience} XP</span>
-            <span className="text-[10px] text-gray-500 font-bold">100 XP</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+            <span style={{ fontSize: '0.7rem', color: '#444466', fontWeight: 600 }}>{user.experience} XP</span>
+            <span style={{ fontSize: '0.7rem', color: '#444466', fontWeight: 600 }}>100 XP</span>
           </div>
         </div>
 
-        <button onClick={handleLogout} className="w-full p-3 bg-red-500/10 text-red-400 rounded-xl font-bold hover:bg-red-500/20 transition">
-          <i className="fas fa-sign-out-alt mr-2"></i>Logout
+        {/* Logout */}
+        <button onClick={handleLogout} className="btn-logout">
+          <i className="fas fa-sign-out-alt"></i>
+          Logout
         </button>
       </aside>
 
-      {/* ── MAIN CONTENT ── */}
-      <main className="flex-1 overflow-y-auto p-10">
+      {/* ══════════════════ MAIN CONTENT ══════════════════ */}
+      <main className="main-content">
 
-        {/* ─ DASHBOARD ─ */}
+        {/* ─────────── DASHBOARD ─────────── */}
         {activeTab === 'dashboard' && (
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl font-extrabold mb-8">Dashboard Overview</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-[#111] p-8 rounded-3xl border border-gray-800"><p className="text-gray-500 text-xs font-bold uppercase">Pending Tasks</p><h3 className="text-6xl font-black mt-4">{tasks.filter(t => !t.is_done).length}</h3></div>
-              <div className="bg-[#111] p-8 rounded-3xl border border-gray-800"><p className="text-gray-500 text-xs font-bold uppercase">Total Streak</p><h3 className="text-6xl font-black text-yellow-500 mt-4">{habits.reduce((a, h) => a + h.streak, 0)} <i className="fas fa-fire text-3xl"></i></h3></div>
-              <div className="bg-[#111] p-8 rounded-3xl border border-gray-800"><p className="text-gray-500 text-xs font-bold uppercase">Latest Mood</p><h3 className="text-4xl font-black text-green-400 mt-4 capitalize">{diaries.length > 0 ? diaries[0].mood : 'No Entry'}</h3></div>
+          <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+            {/* Greeting */}
+            <div className="section-header" style={{ marginBottom: '32px' }}>
+              <p style={{ fontSize: '0.85rem', color: '#555577', fontWeight: 500, marginBottom: '6px' }}>
+                {getGreeting()} 👋
+              </p>
+              <h2 className="section-title" style={{ fontSize: '2.4rem' }}>
+                {user.name ? `${user.name.split(' ')[0]}'s Dashboard` : 'Dashboard Overview'}
+              </h2>
+              <p style={{ color: '#444466', fontSize: '0.85rem', marginTop: '8px', fontWeight: 500 }}>
+                Ringkasan aktivitas dan produktivitasmu hari ini
+              </p>
+            </div>
+
+            {/* Stat Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+              {/* Pending Tasks */}
+              <div className="glass-card glass-card-purple stat-card">
+                <div className="stat-icon" style={{ background: 'rgba(129, 140, 248, 0.1)', color: '#818cf8' }}>
+                  <i className="fas fa-list-check"></i>
+                </div>
+                <div className="stat-number" style={{ color: '#818cf8' }}>{pendingTasks}</div>
+                <p className="stat-label" style={{ color: '#555577' }}>Pending Tasks</p>
+                {tasks.length > 0 && (
+                  <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${taskCompletionPct}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #818cf8)', borderRadius: '4px', transition: 'width 0.6s ease' }}></div>
+                    </div>
+                    <span style={{ fontSize: '0.7rem', color: '#666688', fontWeight: 700 }}>{taskCompletionPct}%</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Total Streak */}
+              <div className="glass-card glass-card-yellow stat-card">
+                <div className="stat-icon" style={{ background: 'rgba(251, 191, 36, 0.1)', color: '#fbbf24' }}>
+                  <i className="fas fa-fire-flame-curved"></i>
+                </div>
+                <div className="stat-number" style={{ color: '#fbbf24' }}>
+                  {totalStreak}
+                  <span style={{ fontSize: '1.5rem', marginLeft: '8px' }}>🔥</span>
+                </div>
+                <p className="stat-label" style={{ color: '#555577' }}>Total Streak</p>
+                <p style={{ fontSize: '0.75rem', color: '#444466', marginTop: '12px', fontWeight: 500 }}>
+                  {habits.length} habit aktif
+                </p>
+              </div>
+
+              {/* Latest Mood */}
+              <div className="glass-card glass-card-green stat-card">
+                <div className="stat-icon" style={{ background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80' }}>
+                  <i className="fas fa-heart-pulse"></i>
+                </div>
+                <div className="stat-number" style={{ color: '#4ade80', fontSize: '2.2rem' }}>
+                  {diaries.length > 0 ? diaries[0].mood : 'No Entry'}
+                </div>
+                <p className="stat-label" style={{ color: '#555577' }}>Latest Mood</p>
+                <p style={{ fontSize: '0.75rem', color: '#444466', marginTop: '12px', fontWeight: 500 }}>
+                  {diaries.length} jurnal ditulis
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div style={{ marginTop: '32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              <button
+                onClick={() => setActiveTab('tasks')}
+                className="glass-card"
+                style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: '1px solid rgba(129,140,248,0.08)', textAlign: 'left', animation: 'fadeInUp 0.5s ease-out 0.4s both' }}
+              >
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(129,140,248,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', flexShrink: 0 }}>
+                  <i className="fas fa-plus"></i>
+                </div>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ddddf0' }}>Tambah Task</p>
+                  <p style={{ fontSize: '0.75rem', color: '#555577' }}>Buat tugas baru</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('focus')}
+                className="glass-card"
+                style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: '1px solid rgba(129,140,248,0.08)', textAlign: 'left', animation: 'fadeInUp 0.5s ease-out 0.5s both' }}
+              >
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(96,165,250,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60a5fa', flexShrink: 0 }}>
+                  <i className="fas fa-clock"></i>
+                </div>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ddddf0' }}>Focus Mode</p>
+                  <p style={{ fontSize: '0.75rem', color: '#555577' }}>Mulai sesi Pomodoro</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('diary')}
+                className="glass-card"
+                style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', border: '1px solid rgba(129,140,248,0.08)', textAlign: 'left', animation: 'fadeInUp 0.5s ease-out 0.6s both' }}
+              >
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(74,222,128,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4ade80', flexShrink: 0 }}>
+                  <i className="fas fa-pen-fancy"></i>
+                </div>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ddddf0' }}>Tulis Jurnal</p>
+                  <p style={{ fontSize: '0.75rem', color: '#555577' }}>Ceritakan harimu</p>
+                </div>
+              </button>
             </div>
           </div>
         )}
 
-        {/* ─ TASKS ─ */}
+        {/* ─────────── TASKS ─────────── */}
         {activeTab === 'tasks' && (
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-extrabold mb-6">Task Center</h2>
-            <form onSubmit={handleAddTask} className="flex gap-4 mb-8">
-              <input type="text" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} placeholder="Apa tugasmu hari ini?" className="flex-1 bg-[#111] px-6 py-4 rounded-xl border border-gray-700 outline-none focus:border-indigo-500" />
-              <button className="px-8 bg-white text-black font-bold rounded-xl">Tambah</button>
-            </form>
-            <div className="space-y-3">
-              {tasks.map(t => (
-                <div key={t.id} className={`p-4 flex items-center justify-between rounded-xl border transition-all ${t.is_done ? 'bg-[#111] border-gray-800 opacity-50' : 'bg-[#1a1a1a] border-gray-700 shadow-lg'}`}>
-                  <div className="flex items-center gap-4 cursor-pointer" onClick={() => toggleTaskDone(t.id, t.is_done)}>
-                    <div className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-all ${t.is_done ? 'bg-indigo-500 border-indigo-500' : 'border-gray-500'}`}><i className="fas fa-check text-[10px] text-black"></i></div>
-                    <span className={`font-bold ${t.is_done ? 'line-through text-gray-500' : 'text-gray-200'}`}>{t.title}</span>
-                  </div>
-                  <button onClick={() => deleteTask(t.id)} className="text-red-400 p-2 hover:scale-125 transition-transform"><i className="fas fa-trash"></i></button>
+          <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+            <div className="section-header">
+              <h2 className="section-title">Task Center</h2>
+              <p className="section-subtitle">Kelola dan selesaikan tugasmu satu per satu</p>
+            </div>
+
+            {/* Progress bar */}
+            {tasks.length > 0 && (
+              <div className="glass-card task-progress" style={{ animationDelay: '0.1s' }}>
+                <svg width="44" height="44" viewBox="0 0 44 44" style={{ flexShrink: 0 }}>
+                  <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
+                  <circle cx="22" cy="22" r="18" fill="none" stroke="#818cf8" strokeWidth="4" strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 18}`}
+                    strokeDashoffset={`${2 * Math.PI * 18 * (1 - taskCompletionPct / 100)}`}
+                    style={{ transform: 'rotate(-90deg)', transformOrigin: '22px 22px', transition: 'stroke-dashoffset 0.6s ease' }}
+                  />
+                  <text x="22" y="26" textAnchor="middle" fill="#818cf8" fontSize="11" fontWeight="800">{taskCompletionPct}%</text>
+                </svg>
+                <div>
+                  <p style={{ fontWeight: 700, fontSize: '0.9rem', color: '#ddddf0' }}>
+                    {completedTasks} dari {tasks.length} selesai
+                  </p>
+                  <p style={{ fontSize: '0.75rem', color: '#555577' }}>
+                    {pendingTasks === 0 ? '🎉 Semua tugas selesai!' : `${pendingTasks} tugas tersisa`}
+                  </p>
                 </div>
-              ))}
+              </div>
+            )}
+
+            {/* Add Task Form */}
+            <form onSubmit={handleAddTask} style={{ display: 'flex', gap: '12px', marginBottom: '28px', animation: 'fadeInUp 0.4s ease-out 0.15s both' }}>
+              <input
+                type="text" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)}
+                placeholder="✏️ Apa tugasmu hari ini?"
+                className="input-premium"
+                style={{ flex: 1 }}
+              />
+              <button type="submit" className="btn-white" style={{ whiteSpace: 'nowrap' }}>
+                <i className="fas fa-plus" style={{ marginRight: '6px' }}></i>
+                Tambah
+              </button>
+            </form>
+
+            {/* Task List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {tasks.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">📋</div>
+                  <p className="empty-state-text">Belum ada tugas. Tambahkan tugas pertamamu!</p>
+                </div>
+              ) : (
+                tasks.map((t, i) => (
+                  <div key={t.id} className={`task-item ${t.is_done ? 'done' : ''}`} style={{ animationDelay: `${i * 0.05}s` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', flex: 1 }} onClick={() => toggleTaskDone(t.id, t.is_done)}>
+                      <div className={`custom-checkbox ${t.is_done ? 'checked' : ''}`}>
+                        {t.is_done && <i className="fas fa-check" style={{ fontSize: '10px', color: 'white' }}></i>}
+                      </div>
+                      <span style={{
+                        fontWeight: 600,
+                        fontSize: '0.95rem',
+                        color: t.is_done ? '#444466' : '#ddddf0',
+                        textDecoration: t.is_done ? 'line-through' : 'none',
+                        transition: 'all 0.3s ease'
+                      }}>
+                        {t.title}
+                      </span>
+                    </div>
+                    <button onClick={() => deleteTask(t.id)} className="btn-delete">
+                      <i className="fas fa-trash" style={{ fontSize: '0.8rem' }}></i>
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
 
-        {/* ─ HABITS ─ */}
+        {/* ─────────── HABITS ─────────── */}
         {activeTab === 'habits' && (
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-extrabold mb-6">Habit Forge</h2>
-            <form onSubmit={handleAddHabit} className="flex gap-4 mb-8">
-              <input type="text" value={newHabitName} onChange={e => setNewHabitName(e.target.value)} placeholder="Buat habit baru..." className="flex-1 bg-[#111] px-6 py-4 rounded-xl border border-gray-700 outline-none focus:border-yellow-500" />
-              <button className="px-8 bg-yellow-500 text-black font-bold rounded-xl">Buat</button>
+          <div style={{ maxWidth: '900px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+            <div className="section-header">
+              <h2 className="section-title">Habit Forge</h2>
+              <p className="section-subtitle">Bangun kebiasaan positif, raih streak terpanjang</p>
+            </div>
+
+            {/* Add Habit Form */}
+            <form onSubmit={handleAddHabit} style={{ display: 'flex', gap: '12px', marginTop: '24px', marginBottom: '28px', animation: 'fadeInUp 0.4s ease-out 0.1s both' }}>
+              <input
+                type="text" value={newHabitName} onChange={e => setNewHabitName(e.target.value)}
+                placeholder="⚡ Buat habit baru..."
+                className="input-premium input-premium-yellow"
+                style={{ flex: 1 }}
+              />
+              <button type="submit" className="btn-yellow" style={{ whiteSpace: 'nowrap' }}>
+                <i className="fas fa-plus" style={{ marginRight: '6px' }}></i>
+                Buat
+              </button>
             </form>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {habits.map(h => (
-                <div key={h.id} className="bg-[#1a1a1a] p-6 rounded-2xl border border-gray-700 flex justify-between items-center">
-                  <div><h3 className="text-xl font-bold">{h.name}</h3><p className="text-gray-400 text-sm">Streak: <span className="text-yellow-500 font-bold">{h.streak} Hari</span></p></div>
-                  <div className="flex items-center gap-3">
-                    <button onClick={() => checkInHabit(h.id)} className="w-12 h-12 bg-[#111] border border-gray-600 rounded-full flex items-center justify-center hover:bg-yellow-500 hover:text-black transition">🔥</button>
-                    <button onClick={() => deleteHabit(h.id)} className="text-red-400 p-2"><i className="fas fa-trash"></i></button>
-                  </div>
+
+            {/* Habit Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
+              {habits.length === 0 ? (
+                <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+                  <div className="empty-state-icon">⚡</div>
+                  <p className="empty-state-text">Belum ada habit. Mulai bangun kebiasaan baikmu!</p>
                 </div>
-              ))}
+              ) : (
+                habits.map((h, i) => {
+                  const tier = getStreakTier(h.streak);
+                  return (
+                    <div key={h.id} className="glass-card glass-card-yellow habit-card" style={{ animationDelay: `${i * 0.08}s` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                          <h3 style={{ fontWeight: 800, fontSize: '1.1rem', color: '#f0f0f5', marginBottom: '8px' }}>{h.name}</h3>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '1.1rem' }}>{tier.icon}</span>
+                            <span className={tier.class} style={{ fontWeight: 800, fontSize: '1.4rem' }}>{h.streak}</span>
+                            <span style={{ fontSize: '0.8rem', color: '#555577', fontWeight: 600 }}>hari streak</span>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button onClick={() => checkInHabit(h.id)} className="habit-checkin-btn">
+                            🔥
+                          </button>
+                          <button onClick={() => deleteHabit(h.id)} className="btn-delete">
+                            <i className="fas fa-trash" style={{ fontSize: '0.8rem' }}></i>
+                          </button>
+                        </div>
+                      </div>
+                      {/* Mini streak bar */}
+                      <div style={{ marginTop: '16px', height: '3px', background: 'rgba(255,255,255,0.04)', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${Math.min(h.streak / 30 * 100, 100)}%`,
+                          height: '100%',
+                          background: h.streak >= 30 ? 'linear-gradient(90deg, #f59e0b, #fcd34d)' : h.streak >= 7 ? 'linear-gradient(90deg, #94a3b8, #cbd5e1)' : 'linear-gradient(90deg, #a78242, #cd9b5a)',
+                          borderRadius: '3px',
+                          transition: 'width 0.6s ease'
+                        }}></div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         )}
 
-        {/* ─ DIARY ─ */}
+        {/* ─────────── DIARY ─────────── */}
         {activeTab === 'diary' && (
-          <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1 bg-[#111] p-6 rounded-3xl border border-gray-800 h-fit">
-              <h3 className="font-bold text-xl mb-4">Tulis Jurnal Baru</h3>
-              <form onSubmit={handleAddDiary} className="space-y-4">
-                <input type="text" placeholder="Judul..." value={newDiary.title} onChange={e => setNewDiary({ ...newDiary, title: e.target.value })} className="w-full bg-[#1a1a1a] p-3 rounded-lg border border-gray-700 outline-none focus:border-indigo-500" />
-                <select value={newDiary.mood} onChange={e => setNewDiary({ ...newDiary, mood: e.target.value })} className="w-full bg-[#1a1a1a] p-3 rounded-lg border border-gray-700 text-gray-300 outline-none">
-                  <option value="Happy">😁 Happy</option><option value="Neutral">😐 Neutral</option><option value="Sad">😢 Sad</option><option value="On Fire">🔥 On Fire</option>
-                </select>
-                <textarea placeholder="Ceritakan harimu..." value={newDiary.content} onChange={e => setNewDiary({ ...newDiary, content: e.target.value })} className="w-full h-32 bg-[#1a1a1a] p-3 rounded-lg border border-gray-700 outline-none focus:border-indigo-500 resize-none"></textarea>
-                <button className="w-full bg-indigo-500 text-white font-bold py-3 rounded-lg hover:bg-indigo-600 transition">Simpan</button>
-              </form>
+          <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+            <div className="section-header" style={{ marginBottom: '28px' }}>
+              <h2 className="section-title">My Journal</h2>
+              <p className="section-subtitle">Tulis pikiran, perasaan, dan refleksimu</p>
             </div>
-            <div className="lg:col-span-2 space-y-4">
-              {diaries.map(d => (
-                <div key={d.id} className="bg-[#1a1a1a] p-6 rounded-2xl border border-gray-700 relative">
-                  <button onClick={() => deleteDiary(d.id)} className="absolute top-4 right-4 text-gray-600 hover:text-red-500"><i className="fas fa-times"></i></button>
-                  <div className="flex justify-between items-end mb-4"><h3 className="text-2xl font-bold">{d.title}</h3><span className="text-xs bg-[#111] px-3 py-1 rounded-full border border-gray-600">{d.mood}</span></div>
-                  <p className="text-gray-300 whitespace-pre-line">{d.content}</p>
-                  <p className="text-xs text-gray-500 mt-4">{new Date(d.created_at).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                </div>
-              ))}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '28px' }}>
+              {/* Write Form */}
+              <div className="glass-card" style={{ padding: '28px', height: 'fit-content', position: 'sticky', top: '0', animation: 'fadeInUp 0.4s ease-out both' }}>
+                <h3 style={{ fontWeight: 800, fontSize: '1.1rem', color: '#f0f0f5', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <i className="fas fa-pen-fancy" style={{ color: '#818cf8', fontSize: '0.9rem' }}></i>
+                  Tulis Jurnal Baru
+                </h3>
+                <form onSubmit={handleAddDiary} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <input
+                    type="text" placeholder="Judul..." value={newDiary.title}
+                    onChange={e => setNewDiary({ ...newDiary, title: e.target.value })}
+                    className="input-premium"
+                  />
+                  <select
+                    value={newDiary.mood}
+                    onChange={e => setNewDiary({ ...newDiary, mood: e.target.value })}
+                    className="select-premium"
+                  >
+                    <option value="Happy">😁 Happy</option>
+                    <option value="Neutral">😐 Neutral</option>
+                    <option value="Sad">😢 Sad</option>
+                    <option value="On Fire">🔥 On Fire</option>
+                  </select>
+                  <textarea
+                    placeholder="Ceritakan harimu..."
+                    value={newDiary.content}
+                    onChange={e => setNewDiary({ ...newDiary, content: e.target.value })}
+                    className="textarea-premium"
+                  ></textarea>
+                  <button type="submit" className="btn-primary" style={{ width: '100%' }}>
+                    <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                      <i className="fas fa-paper-plane"></i>
+                      Simpan Jurnal
+                    </span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Diary Entries */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {diaries.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-state-icon">📖</div>
+                    <p className="empty-state-text">Belum ada jurnal. Tulis ceritamu hari ini!</p>
+                  </div>
+                ) : (
+                  diaries.map((d, i) => {
+                    const moodClass = d.mood === 'On Fire' ? 'mood-OnFire' : `mood-${d.mood}`;
+                    return (
+                      <div key={d.id} className="glass-card diary-entry" style={{ animationDelay: `${i * 0.08}s` }}>
+                        <button onClick={() => deleteDiary(d.id)} className="btn-close">
+                          <i className="fas fa-times" style={{ fontSize: '0.75rem' }}></i>
+                        </button>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', paddingRight: '36px' }}>
+                          <h3 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#f0f0f5' }}>{d.title}</h3>
+                          <span className={`mood-badge ${moodClass}`}>{d.mood}</span>
+                        </div>
+                        <p style={{ color: '#9999bb', lineHeight: 1.7, whiteSpace: 'pre-line', fontSize: '0.9rem' }}>{d.content}</p>
+                        <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                          <p style={{ fontSize: '0.75rem', color: '#444466', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <i className="fas fa-calendar" style={{ fontSize: '0.65rem' }}></i>
+                            {new Date(d.created_at).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* ─────────────────────────────────────────────
-            ⏱ FOCUS MODE — POMODORO TIMER
-        ───────────────────────────────────────────── */}
+        {/* ─────────── FOCUS MODE — POMODORO TIMER ─────────── */}
         {activeTab === 'focus' && (
-          <div className="flex flex-col items-center justify-center min-h-[82vh] select-none">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '82vh', userSelect: 'none', position: 'relative', zIndex: 1 }}>
 
-            <h2 className="text-3xl font-extrabold mb-1 text-center">⏱ Focus Mode</h2>
-            <p className="text-gray-500 text-sm mb-8 text-center">Selesaikan sesi fokus 25 menit → <span style={{ color: cur.color }}>+25 XP</span> otomatis</p>
+            {/* Ambient background glow */}
+            <div style={{
+              position: 'absolute',
+              width: '500px', height: '500px',
+              borderRadius: '50%',
+              top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: `radial-gradient(circle, ${curMode.color}08, transparent 70%)`,
+              filter: 'blur(60px)',
+              pointerEvents: 'none',
+              transition: 'background 0.6s ease',
+              animation: isRunning ? 'breathe 4s ease-in-out infinite' : 'none',
+            }}></div>
+
+            <div className="section-header" style={{ textAlign: 'center', marginBottom: '8px' }}>
+              <h2 className="section-title">⏱ Focus Mode</h2>
+              <p className="section-subtitle">
+                Selesaikan sesi fokus 25 menit → <span style={{ color: curMode.color, fontWeight: 700 }}>+25 XP</span> otomatis
+              </p>
+            </div>
 
             {/* Mode Selector */}
-            <div className="flex gap-2 mb-10 bg-[#111] p-1.5 rounded-2xl border border-gray-800">
+            <div style={{
+              display: 'flex', gap: '6px',
+              marginBottom: '40px', marginTop: '16px',
+              padding: '6px',
+              borderRadius: '16px',
+              background: 'rgba(12, 12, 28, 0.5)',
+              border: '1px solid rgba(255,255,255,0.05)',
+            }}>
               {Object.entries(MODES).map(([key, val]) => (
-                <button key={key} onClick={() => changeMode(key)}
-                  className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200"
+                <button
+                  key={key}
+                  onClick={() => changeMode(key)}
+                  className="focus-mode-tab"
                   style={pomMode === key
-                    ? { background: val.color + '20', color: val.color, border: `1px solid ${val.color}50` }
-                    : { color: '#6b7280', border: '1px solid transparent' }}>
+                    ? { background: val.color + '15', color: val.color, borderColor: val.color + '30', boxShadow: `0 0 16px ${val.color}10` }
+                    : { color: '#555577' }}
+                >
                   {val.label}
                 </button>
               ))}
             </div>
 
             {/* Circular SVG Timer */}
-            <div className="relative mb-10"
-              style={{
-                filter: isRunning ? `drop-shadow(0 0 25px ${cur.shadow})` : 'drop-shadow(0 0 0px transparent)',
-                transition: 'filter 0.6s ease',
-              }}>
+            <div style={{
+              position: 'relative', marginBottom: '40px',
+              filter: isRunning ? `drop-shadow(0 0 30px ${curMode.shadow})` : 'drop-shadow(0 0 0px transparent)',
+              transition: 'filter 0.6s ease',
+            }}>
               <svg width="280" height="280" viewBox="0 0 280 280">
+                {/* Outer subtle ring */}
+                <circle cx="140" cy="140" r={RADIUS + 14} fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="1" />
                 {/* Track ring */}
-                <circle cx="140" cy="140" r={RADIUS} fill="none" stroke="#1e1e1e" strokeWidth="14" />
+                <circle cx="140" cy="140" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="10" />
                 {/* Progress ring */}
                 <circle cx="140" cy="140" r={RADIUS} fill="none"
-                  stroke={cur.color} strokeWidth="14" strokeLinecap="round"
+                  stroke={curMode.color} strokeWidth="10" strokeLinecap="round"
                   strokeDasharray={CIRC} strokeDashoffset={offset}
-                  style={{ transform: 'rotate(-90deg)', transformOrigin: '140px 140px', transition: 'stroke-dashoffset 1s linear, stroke 0.4s' }} />
+                  style={{ transform: 'rotate(-90deg)', transformOrigin: '140px 140px', transition: 'stroke-dashoffset 1s linear, stroke 0.4s' }}
+                />
+                {/* Glow ring behind progress */}
+                <circle cx="140" cy="140" r={RADIUS} fill="none"
+                  stroke={curMode.color} strokeWidth="10" strokeLinecap="round"
+                  strokeDasharray={CIRC} strokeDashoffset={offset}
+                  style={{ transform: 'rotate(-90deg)', transformOrigin: '140px 140px', transition: 'stroke-dashoffset 1s linear, stroke 0.4s', filter: `blur(8px)`, opacity: 0.3 }}
+                />
                 {/* Dot at tip */}
                 {pct < 1 && (
-                  <circle cx={dotX} cy={dotY} r="7" fill={cur.color}
-                    style={{ filter: `drop-shadow(0 0 6px ${cur.color})` }} />
+                  <circle cx={dotX} cy={dotY} r="6" fill={curMode.color}
+                    style={{ filter: `drop-shadow(0 0 8px ${curMode.color})` }} />
                 )}
                 {/* Time display */}
-                <text x="140" y="126" textAnchor="middle" fill="white" fontSize="44" fontWeight="900" fontFamily="'Courier New', monospace">{fmt(timeLeft)}</text>
-                <text x="140" y="154" textAnchor="middle" fill={cur.color} fontSize="12" fontWeight="800" letterSpacing="3">{cur.label.toUpperCase()}</text>
-                <text x="140" y="175" textAnchor="middle" fill="#444" fontSize="11">Sesi #{sessCount + 1}</text>
+                <text x="140" y="124" textAnchor="middle" fill="white" fontSize="42" fontWeight="900" fontFamily="'JetBrains Mono', 'Courier New', monospace">{fmt(timeLeft)}</text>
+                <text x="140" y="152" textAnchor="middle" fill={curMode.color} fontSize="11" fontWeight="700" letterSpacing="3">{curMode.label.toUpperCase()}</text>
+                <text x="140" y="174" textAnchor="middle" fill="#444466" fontSize="11" fontWeight="600">Sesi #{sessCount + 1}</text>
               </svg>
 
               {/* Pulse rings when running */}
-              {isRunning && <>
-                <div className="absolute inset-0 rounded-full border-2 animate-ping opacity-10" style={{ borderColor: cur.color }}></div>
-              </>}
+              {isRunning && (
+                <>
+                  <div style={{
+                    position: 'absolute', inset: '-10px', borderRadius: '50%',
+                    border: `2px solid ${curMode.color}`,
+                    animation: 'ring-pulse 2s ease-out infinite',
+                    pointerEvents: 'none',
+                  }}></div>
+                  <div style={{
+                    position: 'absolute', inset: '-10px', borderRadius: '50%',
+                    border: `2px solid ${curMode.color}`,
+                    animation: 'ring-pulse 2s ease-out 0.7s infinite',
+                    pointerEvents: 'none',
+                  }}></div>
+                </>
+              )}
             </div>
 
             {/* Controls */}
-            <div className="flex items-center gap-5 mb-10">
-              {/* Reset */}
-              <button onClick={resetTimer}
-                className="w-12 h-12 rounded-full bg-[#111] border border-gray-700 text-gray-500 hover:text-white hover:border-gray-500 transition flex items-center justify-center">
-                <i className="fas fa-redo text-sm"></i>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
+              <button onClick={resetTimer} className="focus-control-btn">
+                <i className="fas fa-redo" style={{ fontSize: '0.85rem' }}></i>
               </button>
 
-              {/* Play / Pause */}
-              <button onClick={toggleTimer}
-                className="w-20 h-20 rounded-full font-black text-xl transition-all duration-300 flex items-center justify-center"
+              <button
+                onClick={toggleTimer}
+                className="focus-play-btn"
                 style={{
-                  background: isRunning ? `${cur.color}18` : cur.color,
-                  border: `2px solid ${cur.color}`,
-                  color: isRunning ? cur.color : '#000',
-                  boxShadow: isRunning ? `0 0 24px ${cur.shadow}` : `0 4px 20px ${cur.shadow}`,
-                }}>
+                  background: isRunning ? `${curMode.color}12` : curMode.color,
+                  borderColor: curMode.color,
+                  color: isRunning ? curMode.color : '#000',
+                  boxShadow: isRunning ? `0 0 30px ${curMode.shadow}` : `0 4px 24px ${curMode.shadow}`,
+                }}
+              >
                 <i className={`fas ${isRunning ? 'fa-pause' : 'fa-play'} ${!isRunning ? 'ml-1' : ''}`}></i>
               </button>
 
-              {/* Percent badge */}
-              <div className="w-12 h-12 rounded-full bg-[#111] border border-gray-700 flex items-center justify-center">
-                <span className="text-[10px] text-gray-400 font-bold">{Math.round((1 - pct) * 100)}%</span>
+              <div className="focus-control-btn" style={{ cursor: 'default' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 800 }}>{Math.round((1 - pct) * 100)}%</span>
               </div>
             </div>
 
-
-            {/* Session dots (completed focus sessions this run) */}
+            {/* Session dots */}
             {sessCount > 0 && (
-              <div className="mt-6 flex gap-2 items-center">
-                <span className="text-[10px] text-gray-600 font-bold mr-1">Sesi selesai:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.4s ease' }}>
+                <span style={{ fontSize: '0.7rem', color: '#444466', fontWeight: 700, marginRight: '4px' }}>Sesi selesai:</span>
                 {Array.from({ length: Math.min(sessCount, 8) }).map((_, i) => (
-                  <div key={i} className="w-3 h-3 rounded-full"
-                    style={{ background: MODES.focus.color, boxShadow: `0 0 6px ${MODES.focus.shadow}` }} />
+                  <div key={i} className="session-dot"
+                    style={{
+                      background: MODES.focus.color,
+                      boxShadow: `0 0 8px ${MODES.focus.shadow}`,
+                      animationDelay: `${i * 0.08}s`
+                    }}
+                  />
                 ))}
-                {sessCount > 8 && <span className="text-[10px] text-gray-600 font-bold">+{sessCount - 8}</span>}
+                {sessCount > 8 && <span style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700 }}>+{sessCount - 8}</span>}
               </div>
             )}
           </div>
         )}
 
-        {/* ─ ANALYTICS ─ */}
+        {/* ─────────── ANALYTICS ─────────── */}
         {activeTab === 'analytics' && (
-          <div className="max-w-6xl mx-auto space-y-10">
-            <h2 className="text-3xl font-extrabold mb-8">Productivity Insights</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="bg-[#111] p-6 rounded-3xl border border-gray-800">
-                <h3 className="text-xl font-bold mb-6 text-indigo-400">Penyelesaian Tugas</h3>
-                <div className="h-64"><ResponsiveContainer><PieChart><Pie data={stats.tasks} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value"><Cell fill="#818cf8" /><Cell fill="#333" /></Pie><Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }} /><Legend /></PieChart></ResponsiveContainer></div>
+          <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+            <div className="section-header" style={{ marginBottom: '32px' }}>
+              <h2 className="section-title">Productivity Insights</h2>
+              <p className="section-subtitle">Pantau perkembangan dan produktivitasmu</p>
+            </div>
+
+            {/* Summary Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '28px' }}>
+              <div className="glass-card" style={{ padding: '20px 24px', animation: 'fadeInUp 0.4s ease-out 0.05s both' }}>
+                <p style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Total Tasks</p>
+                <p style={{ fontSize: '2rem', fontWeight: 900, color: '#818cf8', marginTop: '4px' }}>{tasks.length}</p>
               </div>
-              <div className="bg-[#111] p-6 rounded-3xl border border-gray-800">
-                <h3 className="text-xl font-bold mb-6 text-yellow-500">Performa Habit (Streak)</h3>
-                <div className="h-64"><ResponsiveContainer><BarChart data={stats.habits}><XAxis dataKey="name" stroke="#555" fontSize={12} /><YAxis stroke="#555" fontSize={12} /><Tooltip cursor={{ fill: '#1a1a1a' }} contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }} /><Bar dataKey="value" fill="#eab308" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div>
+              <div className="glass-card" style={{ padding: '20px 24px', animation: 'fadeInUp 0.4s ease-out 0.1s both' }}>
+                <p style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Completed</p>
+                <p style={{ fontSize: '2rem', fontWeight: 900, color: '#4ade80', marginTop: '4px' }}>{completedTasks}</p>
               </div>
-              <div className="bg-[#111] p-6 rounded-3xl border border-gray-800 lg:col-span-2">
-                <h3 className="text-xl font-bold mb-6 text-green-400">Analisis Suasana Hati</h3>
-                <div className="h-64"><ResponsiveContainer><BarChart data={stats.moods} layout="vertical"><XAxis type="number" hide /><YAxis dataKey="name" type="category" stroke="#fff" fontSize={12} width={80} /><Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }} /><Bar dataKey="value" fill="#4ade80" radius={[0, 4, 4, 0]} /></BarChart></ResponsiveContainer></div>
+              <div className="glass-card" style={{ padding: '20px 24px', animation: 'fadeInUp 0.4s ease-out 0.15s both' }}>
+                <p style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Habits</p>
+                <p style={{ fontSize: '2rem', fontWeight: 900, color: '#fbbf24', marginTop: '4px' }}>{habits.length}</p>
+              </div>
+              <div className="glass-card" style={{ padding: '20px 24px', animation: 'fadeInUp 0.4s ease-out 0.2s both' }}>
+                <p style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Journal</p>
+                <p style={{ fontSize: '2rem', fontWeight: 900, color: '#60a5fa', marginTop: '4px' }}>{diaries.length}</p>
+              </div>
+            </div>
+
+            {/* Charts */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+              <div className="glass-card chart-card" style={{ animationDelay: '0.15s' }}>
+                <h3 style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#818cf8', boxShadow: '0 0 8px rgba(129,140,248,0.4)' }}></span>
+                  <span style={{ color: '#ddddf0' }}>Penyelesaian Tugas</span>
+                </h3>
+                <div style={{ height: '250px' }}>
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie data={stats.tasks} innerRadius={60} outerRadius={85} paddingAngle={4} dataKey="value" strokeWidth={0}>
+                        <Cell fill="#818cf8" />
+                        <Cell fill="rgba(255,255,255,0.06)" />
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: '#0d0d1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', fontFamily: 'Outfit', fontSize: '0.85rem' }} />
+                      <Legend wrapperStyle={{ fontFamily: 'Outfit', fontSize: '0.8rem' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="glass-card chart-card" style={{ animationDelay: '0.25s' }}>
+                <h3 style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24', boxShadow: '0 0 8px rgba(251,191,36,0.4)' }}></span>
+                  <span style={{ color: '#ddddf0' }}>Performa Habit (Streak)</span>
+                </h3>
+                <div style={{ height: '250px' }}>
+                  <ResponsiveContainer>
+                    <BarChart data={stats.habits}>
+                      <XAxis dataKey="name" stroke="#444466" fontSize={11} fontFamily="Outfit" />
+                      <YAxis stroke="#444466" fontSize={11} fontFamily="Outfit" />
+                      <Tooltip cursor={{ fill: 'rgba(129,140,248,0.04)' }} contentStyle={{ backgroundColor: '#0d0d1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', fontFamily: 'Outfit', fontSize: '0.85rem' }} />
+                      <Bar dataKey="value" fill="#fbbf24" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="glass-card chart-card" style={{ gridColumn: '1 / -1', animationDelay: '0.35s' }}>
+                <h3 style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px rgba(74,222,128,0.4)' }}></span>
+                  <span style={{ color: '#ddddf0' }}>Analisis Suasana Hati</span>
+                </h3>
+                <div style={{ height: '250px' }}>
+                  <ResponsiveContainer>
+                    <BarChart data={stats.moods} layout="vertical">
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="name" type="category" stroke="#ddddf0" fontSize={12} fontFamily="Outfit" width={80} />
+                      <Tooltip contentStyle={{ backgroundColor: '#0d0d1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', fontFamily: 'Outfit', fontSize: '0.85rem' }} />
+                      <Bar dataKey="value" fill="#4ade80" radius={[0, 6, 6, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
           </div>
