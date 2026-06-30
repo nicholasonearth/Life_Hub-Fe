@@ -185,6 +185,38 @@ function App() {
   const [quickNote, setQuickNote] = useState(() => localStorage.getItem('lifehub_quick_note') || '');
   const [noteSaved, setNoteSaved] = useState(false);
 
+  // ── Google Calendar API State ──
+  const [googleToken, setGoogleToken] = useState(null);
+  const tokenClientRef = useRef(null);
+
+  useEffect(() => {
+    const initGoogleClient = () => {
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'PASTE_CLIENT_ID_DI_SINI',
+          scope: 'https://www.googleapis.com/auth/calendar.events',
+          callback: (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              setGoogleToken(tokenResponse.access_token);
+              Swal.fire({ icon: 'success', title: 'Terhubung ke Google Calendar!', background: '#0d0d1a', color: '#fff', timer: 1500, showConfirmButton: false });
+            }
+          },
+        });
+      } else {
+        setTimeout(initGoogleClient, 500);
+      }
+    };
+    initGoogleClient();
+  }, []);
+
+  const handleConnectGoogle = () => {
+    if (tokenClientRef.current) {
+      tokenClientRef.current.requestAccessToken();
+    } else {
+      Swal.fire({ icon: 'error', title: 'Oops', text: 'Google API belum termuat. Coba refresh halaman.', background: '#0d0d1a', color: '#fff' });
+    }
+  };
+
   const timerRef = useRef(null);
   const completeRef = useRef(null);
   const noteTimeoutRef = useRef(null);
@@ -244,9 +276,10 @@ function App() {
     localStorage.setItem('lifehub_calendar_events', JSON.stringify(events));
   };
 
-  const handleAddEvent = (e) => {
+  const handleAddEvent = async (e) => {
     e.preventDefault();
     if (!newEvent.title || !selectedDate) return;
+    
     const event = {
       id: Date.now(),
       title: newEvent.title,
@@ -256,10 +289,52 @@ function App() {
       description: newEvent.description || '',
       color: newEvent.color,
     };
+
+    if (googleToken) {
+      Swal.fire({ title: 'Menyimpan ke Google Calendar...', background: '#0d0d1a', color: '#fff', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      const gEvent = {
+        summary: event.title,
+        description: event.description,
+      };
+
+      if (event.startTime && event.endTime) {
+        gEvent.start = { dateTime: `${selectedDate}T${event.startTime}:00+07:00`, timeZone: 'Asia/Jakarta' };
+        gEvent.end = { dateTime: `${selectedDate}T${event.endTime}:00+07:00`, timeZone: 'Asia/Jakarta' };
+      } else {
+        gEvent.start = { date: selectedDate };
+        gEvent.end = { date: selectedDate };
+      }
+
+      try {
+        const response = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${googleToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(gEvent)
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          console.error('Google API Error:', errData);
+          Swal.fire({ icon: 'error', title: 'Gagal API', text: errData.error?.message || 'Pastikan Google Calendar API sudah di-enable di Cloud Console.', background: '#0d0d1a', color: '#fff' });
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+        Swal.fire({ icon: 'error', title: 'Gagal Koneksi', text: 'Tidak dapat menghubungi server Google.', background: '#0d0d1a', color: '#fff' });
+        return;
+      }
+    }
+
     saveCalendarEvents([...calendarEvents, event]);
     setNewEvent({ title: '', startTime: '', endTime: '', description: '', color: '#818cf8' });
     setShowAddEventForm(false);
-    Swal.fire({ icon: 'success', title: 'Event Ditambahkan!', background: '#0d0d1a', color: '#fff', timer: 1200, showConfirmButton: false });
+    
+    if (googleToken) {
+      Swal.fire({ icon: 'success', title: 'Tersimpan Otomatis!', text: 'Sudah ditambahkan ke Google Calendar', background: '#0d0d1a', color: '#fff', timer: 1800, showConfirmButton: false });
+    } else {
+      Swal.fire({ icon: 'success', title: 'Tersimpan (Lokal)!', text: 'Gunakan tombol Connect untuk auto-save.', background: '#0d0d1a', color: '#fff', timer: 1500, showConfirmButton: false });
+    }
   };
 
   const deleteEvent = (id) => {
@@ -753,6 +828,30 @@ function App() {
                 <span style={{ fontSize: '0.7rem', color: '#555577', fontWeight: 600 }}>Events</span>
               </div>
             </div>
+
+            {/* Google Calendar Connection Banner */}
+            <div style={{ marginTop: '24px', padding: '16px 20px', background: 'rgba(66, 133, 244, 0.05)', border: '1px solid rgba(66, 133, 244, 0.15)', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', animation: 'fadeInUp 0.5s ease-out 0.3s both' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(66, 133, 244, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4285f4', fontSize: '1.2rem' }}>
+                  <i className="fab fa-google"></i>
+                </div>
+                <div>
+                  <h4 style={{ color: '#ddddf0', fontWeight: 700, fontSize: '0.9rem' }}>Google Calendar Auto-Save</h4>
+                  <p style={{ color: '#555577', fontSize: '0.75rem', marginTop: '2px' }}>
+                    {googleToken ? '✅ Terhubung! Event baru akan otomatis tersimpan.' : 'Hubungkan untuk menyimpan event otomatis tanpa draft.'}
+                  </p>
+                </div>
+              </div>
+              {!googleToken ? (
+                <button onClick={handleConnectGoogle} style={{ padding: '8px 16px', background: '#4285f4', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}>
+                  Connect
+                </button>
+              ) : (
+                <span style={{ padding: '6px 12px', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800 }}>
+                  Connected
+                </span>
+              )}
+            </div>
           </div>
         )}
 
@@ -797,15 +896,17 @@ function App() {
                               <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '6px' }}>{ev.description}</p>
                             )}
                             <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                              <a
-                                href={generateGoogleCalendarUrl(ev)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-gcal"
-                              >
-                                <i className="fab fa-google"></i>
-                                Google Calendar
-                              </a>
+                              {!googleToken && (
+                                <a
+                                  href={generateGoogleCalendarUrl(ev)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn-gcal"
+                                >
+                                  <i className="fab fa-google"></i>
+                                  Google Calendar
+                                </a>
+                              )}
                               <button onClick={() => deleteEvent(ev.id)} className="btn-delete" style={{ fontSize: '0.75rem' }}>
                                 <i className="fas fa-trash"></i>
                               </button>
