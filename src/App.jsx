@@ -182,6 +182,9 @@ function App() {
   const [showAddEventForm, setShowAddEventForm] = useState(false);
   const [newEvent, setNewEvent] = useState({ title: '', startTime: '', endTime: '', description: '', color: '#818cf8' });
 
+  // ── Mobile Responsive State ──
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   // ── Quick Notes State ──
   const [quickNote, setQuickNote] = useState(() => localStorage.getItem('lifehub_quick_note') || '');
   const [noteSaved, setNoteSaved] = useState(false);
@@ -543,10 +546,10 @@ function App() {
   ];
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: "'Outfit', sans-serif" }}>
+    <div className="app-container">
 
       {/* ══════════════════ SIDEBAR ══════════════════ */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '12px' }}>
           <h1 className="logo-text">
@@ -578,7 +581,7 @@ function App() {
           {TABS.map(t => (
             <button
               key={t.id}
-              onClick={() => { setActiveTab(t.id); if (t.id === 'analytics') fetchStats(); }}
+              onClick={() => { setActiveTab(t.id); if (t.id === 'analytics') fetchStats(); setIsSidebarOpen(false); }}
               className={`nav-btn ${activeTab === t.id ? 'active' : ''}`}
             >
               <i className={`${t.icon}`} style={{ width: '18px', textAlign: 'center', fontSize: '0.85rem' }}></i>
@@ -638,6 +641,15 @@ function App() {
 
       {/* ══════════════════ MAIN CONTENT ══════════════════ */}
       <main className="main-content">
+        {/* Mobile menu toggle */}
+        <button className="mobile-menu-btn" onClick={() => setIsSidebarOpen(true)}>
+          <i className="fas fa-bars"></i>
+        </button>
+        
+        {/* Sidebar Overlay for Mobile */}
+        {isSidebarOpen && (
+          <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>
+        )}
 
         {/* ─────────── DASHBOARD ─────────── */}
         {activeTab === 'dashboard' && (
@@ -656,7 +668,7 @@ function App() {
             </div>
 
             {/* Stat Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px' }}>
               {/* Pending Tasks */}
               <div className="glass-card glass-card-purple stat-card">
                 <div className="stat-icon" style={{ background: 'rgba(129, 140, 248, 0.1)', color: '#818cf8' }}>
@@ -705,7 +717,7 @@ function App() {
             </div>
 
             {/* ── Quote Card + Quick Notes ── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '24px' }}>
+            <div className="dashboard-grid">
               {/* Daily Quote */}
               <div className="quote-card">
                 <p className="quote-text">{dailyQuote.text}</p>
@@ -1013,7 +1025,7 @@ function App() {
                       onChange={e => setNewEvent({ ...newEvent, title: e.target.value })}
                       className="input-premium" required
                     />
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div className="event-time-grid">
                       <div>
                         <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>Mulai</label>
                         <input type="time" value={newEvent.startTime} onChange={e => setNewEvent({ ...newEvent, startTime: e.target.value })} className="input-premium" />
@@ -1165,7 +1177,7 @@ function App() {
             </form>
 
             {/* Habit Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {habits.length === 0 ? (
                 <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
                   <div className="empty-state-icon">⚡</div>
@@ -1215,7 +1227,7 @@ function App() {
               <p className="section-subtitle">Tulis pikiran, perasaan, dan refleksimu</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '28px' }}>
+            <div className="diary-layout">
               {/* Write Form */}
               <div className="glass-card" style={{ padding: '28px', height: 'fit-content', position: 'sticky', top: '0', animation: 'fadeInUp 0.4s ease-out both' }}>
                 <h3 style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1412,7 +1424,7 @@ function App() {
             </div>
 
             {/* Charts */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div className="analytics-charts-grid">
               <div className="glass-card chart-card" style={{ animationDelay: '0.15s' }}>
                 <h3 style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#818cf8', boxShadow: '0 0 8px rgba(129,140,248,0.4)' }}></span>
