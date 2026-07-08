@@ -543,7 +543,7 @@ function App() {
   ];
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)', fontFamily: "'Outfit', sans-serif" }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: "'Outfit', sans-serif" }}>
 
       {/* ══════════════════ SIDEBAR ══════════════════ */}
       <aside className="sidebar">
